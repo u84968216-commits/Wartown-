@@ -936,85 +936,63 @@ function loadEnemyModel(onDone){
   const GLTFLoader = (T && T.GLTFLoader) || (window.THREE && window.THREE.GLTFLoader);
   if(!GLTFLoader){
     console.warn('GLTFLoader not available — using procedural fallback');
-    onDone();return;
+    onDone(); return;
   }
 
-  // Build base URL — for GitHub Pages both index.html and ga.glb are in root
-  const href = window.location.href;
-  const base = href.substring(0, href.lastIndexOf('/') + 1);
+  // Build the URL — ga.glb must be in the SAME folder as index.html
+  // On GitHub Pages: https://username.github.io/Repo/ga.glb
+  const href = window.location.href.split('?')[0].split('#')[0];
+  const base = href.endsWith('/') ? href : href.substring(0, href.lastIndexOf('/') + 1);
+  const glbURL = base + 'ga.glb';
 
-  const PATHS = [
-    base + 'ga.glb',           // same folder — works on GitHub Pages & local
-    base + 'models/ga.glb',    // models subfolder fallback
-    base + 'Website/ga.glb',   // HopWeb fallback
-    base + 'Website/models/ga.glb',
-  ];
+  console.log('🔄 Loading ga.glb from:', glbURL);
 
-  function tryXHR(paths, idx){
-    if(idx >= paths.length){
-      console.error('❌ ga.glb not found. Tried:\n' + PATHS.join('\n'));
+  // Use fetch() — works reliably on GitHub Pages, no Range header issues
+  fetch(glbURL)
+    .then(res => {
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' for ' + glbURL);
+      return res.arrayBuffer();
+    })
+    .then(buffer => {
+      const loader = new GLTFLoader();
+      loader.parse(buffer, base,
+        gltf => {
+          const mdl = gltf.scene;
+          mdl.traverse(c => {
+            if(c.isMesh){
+              c.castShadow = false;
+              c.receiveShadow = false;
+              c.frustumCulled = false;
+              if(c.material) c.material.side = T.FrontSide;
+            }
+          });
+          // Auto-scale to ~1.8 units tall
+          const box = new T.Box3().setFromObject(mdl);
+          const size = box.getSize(new T.Vector3());
+          const tallest = Math.max(size.x, size.y, size.z);
+          if(tallest > 0){ const sc = 1.8/tallest; mdl.scale.set(sc,sc,sc); }
+          // Sit on ground
+          const box2 = new T.Box3().setFromObject(mdl);
+          mdl.position.y -= box2.min.y;
+          const pivot = new T.Group();
+          pivot.add(mdl);
+          enemyGLB = pivot;
+          console.log('✅ ga.glb loaded! Enemies use 3D model.');
+          onDone();
+        },
+        err => {
+          console.error('❌ GLTFLoader parse error:', err);
+          enemyGLB = null;
+          onDone();
+        }
+      );
+    })
+    .catch(err => {
+      // File not found or network error — use procedural fallback silently
+      console.warn('⚠️ ga.glb not found at ' + glbURL + ' — using procedural enemy. Upload ga.glb next to index.html on GitHub.');
+      enemyGLB = null;
       onDone();
-      return;
-    }
-    const url = paths[idx];
-    const xhr = new XMLHttpRequest();
-    // Use GET with Range header — works on PHP servers that block HEAD
-    xhr.open('GET', url, true);
-    xhr.setRequestHeader('Range', 'bytes=0-3'); // just fetch first 4 bytes to check
-    xhr.responseType = 'arraybuffer';
-    xhr.onload = ()=>{
-      // 200 or 206 (partial content) both mean file exists
-      if(xhr.status === 200 || xhr.status === 206){
-        console.log('✅ Found ga.glb at: ' + url + ' — loading...');
-        loadGLB(url);
-      } else {
-        console.log('⚠ ' + url + ' → HTTP ' + xhr.status);
-        tryXHR(paths, idx+1);
-      }
-    };
-    xhr.onerror = ()=>{
-      console.log('⚠ Network error for: ' + url);
-      tryXHR(paths, idx+1);
-    };
-    xhr.send();
-  }
-
-  function loadGLB(url){
-    const loader = new GLTFLoader();
-    loader.load(
-      url,
-      gltf=>{
-        const mdl = gltf.scene;
-        mdl.traverse(c=>{
-          if(c.isMesh){
-            c.castShadow = false;
-            c.receiveShadow = false;
-            c.frustumCulled = false;
-            if(c.material) c.material.side = T.FrontSide;
-          }
-        });
-        const box = new T.Box3().setFromObject(mdl);
-        const size = box.getSize(new T.Vector3());
-        const tallest = Math.max(size.x, size.y, size.z);
-        if(tallest > 0){ const sc=1.8/tallest; mdl.scale.set(sc,sc,sc); }
-        const box2 = new T.Box3().setFromObject(mdl);
-        mdl.position.y -= box2.min.y;
-        const pivot = new T.Group();
-        pivot.add(mdl);
-        enemyGLB = pivot;
-        console.log('✅ ga.glb loaded! Enemies now use 3D model.');
-        onDone();
-      },
-      undefined,
-      err=>{
-        console.error('❌ GLTFLoader parse error (file found but invalid):', err);
-        enemyGLB = null;
-        onDone();
-      }
-    );
-  }
-
-  tryXHR(PATHS, 0);
+    });
 }
 
 function startPractice(){
