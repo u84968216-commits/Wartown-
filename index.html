@@ -1504,20 +1504,34 @@ function makeProceduralBot(){
   const bk=new T.MeshLambertMaterial({color:0x180e08});
   const hm=new T.MeshLambertMaterial({color:0x1c2e10});
   const gm=new T.MeshLambertMaterial({color:0x111111});
-  const tr=new T.Mesh(new T.BoxGeometry(.52,.6,.28),bm);tr.position.y=1.1;g.add(tr);
+
+  const torso=new T.Mesh(new T.BoxGeometry(.52,.6,.28),bm);torso.position.y=1.1;torso.name='torso';g.add(torso);
   const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.62;g.add(hd);
   const hl=new T.Mesh(new T.SphereGeometry(.2,7,5,0,Math.PI*2,0,Math.PI*.55),hm);hl.position.y=1.74;g.add(hl);
-  const hp=new T.Mesh(new T.BoxGeometry(.46,.28,.26),bm);hp.position.y=.78;g.add(hp);
-  [-.14,.14].forEach(ox=>{
-    const ul=new T.Mesh(new T.BoxGeometry(.2,.38,.2),bm);ul.position.set(ox,.48,0);g.add(ul);
-    const ll=new T.Mesh(new T.BoxGeometry(.18,.35,.18),bm);ll.position.set(ox,.12,0);g.add(ll);
-    const bt=new T.Mesh(new T.BoxGeometry(.2,.13,.26),bk);bt.position.set(ox,-.09,.03);g.add(bt);
-  });
-  [-.36,.36].forEach(ox=>{
-    const ua=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);ua.position.set(ox,1.04,0);g.add(ua);
-    const la=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);la.position.set(ox,.74,0);g.add(la);
-  });
-  const gb=new T.Mesh(new T.BoxGeometry(.07,.11,.42),gm);gb.position.set(.38,.85,.22);g.add(gb);
+  const hip=new T.Mesh(new T.BoxGeometry(.46,.28,.26),bm);hip.position.y=.78;g.add(hip);
+
+  // Legs — pivot at top (hip joint)
+  const legL=new T.Group();legL.position.set(-.14,.76,0);legL.name='legL';g.add(legL);
+  const ulL=new T.Mesh(new T.BoxGeometry(.2,.38,.2),bm);ulL.position.y=-.19;legL.add(ulL);
+  const llL=new T.Mesh(new T.BoxGeometry(.18,.35,.18),bm);llL.position.y=-.56;legL.add(llL);
+  const btL=new T.Mesh(new T.BoxGeometry(.2,.13,.26),bk);btL.position.set(0,-.73,.03);legL.add(btL);
+
+  const legR=new T.Group();legR.position.set(.14,.76,0);legR.name='legR';g.add(legR);
+  const ulR=new T.Mesh(new T.BoxGeometry(.2,.38,.2),bm);ulR.position.y=-.19;legR.add(ulR);
+  const llR=new T.Mesh(new T.BoxGeometry(.18,.35,.18),bm);llR.position.y=-.56;legR.add(llR);
+  const btR=new T.Mesh(new T.BoxGeometry(.2,.13,.26),bk);btR.position.set(0,-.73,.03);legR.add(btR);
+
+  // Arms — pivot at shoulder
+  const armL=new T.Group();armL.position.set(-.36,1.12,0);armL.name='armL';g.add(armL);
+  const uaL=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);uaL.position.y=-.16;armL.add(uaL);
+  const laL=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);laL.position.y=-.44;armL.add(laL);
+
+  const armR=new T.Group();armR.position.set(.36,1.12,0);armR.name='armR';g.add(armR);
+  const uaR=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);uaR.position.y=-.16;armR.add(uaR);
+  const laR=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);laR.position.y=-.44;armR.add(laR);
+  const gb=new T.Mesh(new T.BoxGeometry(.07,.11,.42),gm);gb.position.set(0,-.44,.22);armR.add(gb);
+
+  g._animT=0; // animation timer
   _addHPBar(g);
   return g;
 }
@@ -1529,7 +1543,44 @@ function _addHPBar(g){
   hbFg.position.set(0,2.3,.001);hbFg.name='hbFg';g.add(hbFg);
 }
 
-function makeBotMesh(){return makeProceduralBot();} // kept for respawnBots
+function animateBot(b, dt){
+  if(!b.mesh) return;
+  const mesh = b.mesh;
+  const legL = mesh.getObjectByName('legL');
+  const legR = mesh.getObjectByName('legR');
+  const armL = mesh.getObjectByName('armL');
+  const armR = mesh.getObjectByName('armR');
+  const torso = mesh.getObjectByName('torso');
+  if(!legL||!legR) return; // GLB model — no named parts, skip
+
+  mesh._animT = (mesh._animT||0) + dt;
+  const t = mesh._animT;
+
+  if(b.state==='patrol'||b.state==='seek'){
+    // Walk cycle — legs swing opposite, arms swing opposite
+    const swing = Math.sin(t * 8) * 0.45;
+    legL.rotation.x =  swing;
+    legR.rotation.x = -swing;
+    armL.rotation.x = -swing * 0.6;
+    armR.rotation.x =  swing * 0.6;
+    if(torso) torso.rotation.z = Math.sin(t * 8) * 0.04;
+  } else if(b.state==='shoot'){
+    // Shooting pose — arms raised, slight body bob
+    const bob = Math.sin(t * 18) * 0.06;
+    if(armR) armR.rotation.x = -1.1 + bob; // raise right arm to aim
+    if(armL) armL.rotation.x = -0.8 + bob;
+    legL.rotation.x = 0; legR.rotation.x = 0;
+    if(torso) torso.rotation.z = Math.sin(t*18)*0.02;
+  } else {
+    // Idle — tiny sway
+    legL.rotation.x = 0; legR.rotation.x = 0;
+    if(armL) armL.rotation.x = Math.sin(t*1.5)*0.05;
+    if(armR) armR.rotation.x = Math.sin(t*1.5)*0.05;
+    if(torso) torso.rotation.z = Math.sin(t*1.2)*0.02;
+  }
+}
+
+function makeBotMesh(){return makeProceduralBot();}
 
 // ─── PLAYER MOVEMENT ─────────────────────────────────────────────────────────
 let gunBobT=0;
@@ -1665,6 +1716,7 @@ function moveBots(dt){
       if(b.shootT<=0){b.shootT=1.1/dm;if(Math.random()<dm)playerHit(8+Math.floor(Math.random()*14));}
     }
     if(b.mesh){b.mesh.position.set(b.x,0,b.z);b.mesh.rotation.y=b.ang;}
+    animateBot(b, dt);
   });
 }
 
@@ -1706,19 +1758,26 @@ function fireOnce(){
   const dl=Math.sqrt(dirX*dirX+dirY*dirY+dirZ*dirZ);
   const ndx=dirX/dl, ndy=dirY/dl, ndz=dirZ/dl;
 
-  // Hit detection: dot product + proximity (works reliably on mobile/GitHub Pages)
+  // Hit detection: 2D horizontal ray (XZ plane) + height range check
+  // Much more reliable than full 3D on mobile — pitch angle doesn't cause misses
   function checkHit(tx,ty,tz,radius){
-    // Vector from origin to target
-    const vx=tx-ox, vy=ty-oy, vz=tz-oz;
-    const dist=Math.sqrt(vx*vx+vy*vy+vz*vz);
-    if(dist>80)return false;
-    // Project target onto ray
-    const dot=vx*ndx+vy*ndy+vz*ndz;
-    if(dot<0)return false; // behind shooter
-    // Closest point on ray to target
-    const cx=ox+ndx*dot, cy=oy+ndy*dot, cz=oz+ndz*dot;
-    const perpDist=Math.sqrt((tx-cx)**2+(ty-cy)**2+(tz-cz)**2);
-    return perpDist<radius;
+    const dist2D=Math.sqrt((tx-ox)**2+(tz-oz)**2);
+    if(dist2D>80) return false;
+    // Height check — is the target within 2m vertically of shoot origin?
+    if(Math.abs(ty-oy)>2.5) return false;
+    // 2D ray direction (horizontal only)
+    const r2d=Math.sqrt(ndx*ndx+ndz*ndz);
+    if(r2d<0.001) return false;
+    const n2x=ndx/r2d, n2z=ndz/r2d;
+    // Vector from origin to target (horizontal)
+    const vx=tx-ox, vz=tz-oz;
+    // Project onto 2D ray
+    const dot2=vx*n2x+vz*n2z;
+    if(dot2<0) return false; // behind shooter
+    // Perpendicular distance in 2D
+    const px=ox+n2x*dot2, pz=oz+n2z*dot2;
+    const perp=Math.sqrt((tx-px)**2+(tz-pz)**2);
+    return perp<radius;
   }
 
   // ── Hit bots ──────────────────────────────────────────────────────────────
@@ -1728,7 +1787,7 @@ function fireOnce(){
     // Use actual mesh position for accuracy
     const bx=b.mesh.position.x, bz=b.mesh.position.z;
     const by=b.mesh.position.y+0.9; // chest height
-    if(checkHit(bx,by,bz,0.7)){
+    if(checkHit(bx,by,bz,0.9)){
       const d=Math.sqrt((bx-ox)**2+(bz-oz)**2);
       if(d<bestD){bestD=d;bestBot=b;}
     }
