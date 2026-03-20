@@ -1017,13 +1017,72 @@ function _attachPlayerGLB(gltf){
   playerMesh.add(mdl);
   playerGLBModel=mdl;
 
+  if(!playerGLBClips||playerGLBClips.length===0){return;}
+
+  // Log available clips so you can see names in console
+  console.log('🎭 Bro.glb animation clips:', playerGLBClips.map((c,i)=>i+':'+c.name));
+
   // Setup mixer
   playerGLBMixer=new T.AnimationMixer(mdl);
-  if(playerGLBClips&&playerGLBClips.length>0){
-    // Auto-play first clip (usually idle/walk)
-    const clip=playerGLBClips[0];
+  playerGLBMixer._currentState=null;
+  playerGLBMixer._actions={};  // cache: stateName -> AnimationAction
+
+  // Helper: find clip by trying multiple name variants
+  function findClip(names){
+    for(const n of names){
+      const c=T.AnimationClip.findByName(playerGLBClips,n);
+      if(c)return c;
+    }
+    return null;
+  }
+
+  // Map state names → clip search order
+  const clipMap={
+    idle : findClip(['Idle','idle','Stand','stand','TPose','Armature|Idle','mixamo.com|Layer0']) || playerGLBClips[0],
+    walk : findClip(['Walk','walk','Walking','Run','run','WalkForward','Armature|Walk'])        || playerGLBClips[Math.min(1,playerGLBClips.length-1)],
+    shoot: findClip(['Shoot','shoot','Fire','fire','Attack','attack','Rifle_Aiming_Idle','Armature|Shoot']) || playerGLBClips[0],
+    jump : findClip(['Jump','jump','Jumping','JumpUp','Armature|Jump'])                         || playerGLBClips[0],
+  };
+
+  // Pre-create all actions and set them up
+  Object.entries(clipMap).forEach(([state,clip])=>{
+    if(!clip)return;
     const action=playerGLBMixer.clipAction(clip);
-    action.play();
+    action.enabled=true;
+    action.setEffectiveWeight(0);
+    if(state==='jump'){action.setLoop(T.LoopOnce,1);action.clampWhenFinished=true;}
+    else action.setLoop(T.LoopRepeat,Infinity);
+    action.play(); // prime all actions (weight=0 means invisible)
+    playerGLBMixer._actions[state]=action;
+  });
+
+  // Start in idle
+  _setPlayerGLBAnim('idle',0);
+}
+
+// Crossfade player GLB to a new animation state
+function _setPlayerGLBAnim(state, fadeDur){
+  if(!playerGLBMixer)return;
+  if(state===playerGLBMixer._currentState)return;
+  const fadeDuration=(fadeDur===undefined)?0.18:fadeDur;
+  const prev=playerGLBMixer._currentState;
+  const prevAction=prev?playerGLBMixer._actions[prev]:null;
+  const nextAction=playerGLBMixer._actions[state];
+  if(!nextAction)return;
+
+  playerGLBMixer._currentState=state;
+
+  if(prevAction&&prevAction!==nextAction){
+    prevAction.fadeOut(fadeDuration);
+  }
+  nextAction.reset();
+  nextAction.setEffectiveWeight(1);
+  nextAction.fadeIn(fadeDuration);
+  if(state==='jump'){
+    nextAction.setLoop(T.LoopOnce,1);
+    nextAction.clampWhenFinished=true;
+  } else {
+    nextAction.setLoop(T.LoopRepeat,Infinity);
   }
 }
 
@@ -1099,25 +1158,38 @@ function spawnBotWithGLB(botObj){
     gunGroup2.name='enemyGun';
     g.add(gunGroup2);
 
-    // ── Setup AnimationMixer ──────────────────────────────────────────────
+    // ── Setup AnimationMixer with crossfade ───────────────────────────────
     if(gltf.animations&&gltf.animations.length>0){
-      console.log('🎬 ga.glb clips:',gltf.animations.map(a=>a.name));
+      console.log('🎬 ga.glb clips:',gltf.animations.map((a,i)=>i+':'+a.name));
       const mixer=new T.AnimationMixer(mdl);
       botObj._mixer=mixer;
       botObj._clips=gltf.animations;
-      // Try to find walk/idle clip by name (common names)
-      const walkNames=['Walk','walk','walking','Walking','Run','run','Move','move','Armature|Walk'];
-      const shootNames=['Shoot','shoot','Fire','fire','Attack','attack','Armature|Shoot'];
-      let walkClip=null,shootClip=null;
-      for(const n of walkNames){const c=T.AnimationClip.findByName(gltf.animations,n);if(c){walkClip=c;break;}}
-      for(const n of shootNames){const c=T.AnimationClip.findByName(gltf.animations,n);if(c){shootClip=c;break;}}
-      // Fallback: first clip = walk, second = shoot
-      if(!walkClip&&gltf.animations.length>=1)walkClip=gltf.animations[0];
-      if(!shootClip&&gltf.animations.length>=2)shootClip=gltf.animations[1];
+      botObj._actions={};
+      botObj._currentAnim=null;
+
+      function findBotClip(names){
+        for(const n of names){const c=T.AnimationClip.findByName(gltf.animations,n);if(c)return c;}
+        return null;
+      }
+      const walkClip = findBotClip(['Walk','walk','Walking','Run','run','Move','Armature|Walk','mixamo.com|Layer0']) || gltf.animations[0];
+      const shootClip= findBotClip(['Shoot','shoot','Fire','fire','Attack','attack','Rifle_Aiming_Idle','Armature|Shoot']) || gltf.animations[Math.min(1,gltf.animations.length-1)];
+
       botObj._walkClip=walkClip;
       botObj._shootClip=shootClip;
-      // Start with walk
-      if(walkClip){const a=mixer.clipAction(walkClip);a.play();botObj._currentAnim='walk';}
+
+      // Pre-create and prime actions at weight 0
+      ['walk','shoot'].forEach((s,i)=>{
+        const clip=s==='walk'?walkClip:shootClip;
+        if(!clip)return;
+        const a=mixer.clipAction(clip);
+        a.enabled=true;a.setEffectiveWeight(0);
+        a.setLoop(T.LoopRepeat,Infinity);a.play();
+        botObj._actions[s]=a;
+      });
+
+      // Start walking
+      const startA=botObj._actions['walk'];
+      if(startA){startA.setEffectiveWeight(1);botObj._currentAnim='walk';}
     }
   },()=>{scene.remove(ph);botObj.mesh=makeProceduralBot();botObj.mesh.position.set(botObj.x,0,botObj.z);scene.add(botObj.mesh);});
 }
@@ -1195,8 +1267,35 @@ async function _startEngine(lobbyData){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
   renderer.shadowMap.enabled=false;
   scene=new T.Scene();
-  scene.background=new T.Color(0x6a9cc0);
-  scene.fog=new T.Fog(0x6a9cc0,28,85);
+
+  // ── SKYBOX ────────────────────────────────────────────────────────────
+  // Images must be in same folder as index.html on GitHub:
+  // right.png, left.png, top.png, bottom.png, front.png, back.png  (508×508)
+  (()=>{
+    const href=window.location.href.split('?')[0].split('#')[0];
+    const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
+    const loader=new T.CubeTextureLoader();
+    // Three.js CubeTextureLoader order: +X, -X, +Y, -Y, +Z, -Z
+    loader.setPath(base);
+    loader.load(
+      ['right.png','left.png','top.png','bottom.png','front.png','back.png'],
+      tex=>{
+        scene.background=tex;
+        // Tint fog to match skybox horizon colour (light blue)
+        scene.fog=new T.Fog(0x8ab4d8,32,90);
+      },
+      undefined,
+      err=>{
+        // Fallback if images not found
+        console.warn('Skybox images not found, using solid colour.',err);
+        scene.background=new T.Color(0x6a9cc0);
+        scene.fog=new T.Fog(0x6a9cc0,28,85);
+      }
+    );
+    // Set solid colour immediately so sky isn't black while loading
+    scene.background=new T.Color(0x6a9cc0);
+    scene.fog=new T.Fog(0x6a9cc0,28,85);
+  })();
   camera=new T.PerspectiveCamera(72,window.innerWidth/window.innerHeight,.08,100);
   camera.rotation.order='YXZ';
 
@@ -1702,36 +1801,25 @@ function _addHPBar(g){
 function animateBot(b, dt){
   if(!b.mesh) return;
 
-  // ── GLB model with AnimationMixer ──────────────────────────────────────
+  // ── GLB model with AnimationMixer + crossfade ─────────────────────────
   if(b._mixer){
     b._mixer.update(dt);
-    // Switch between walk and shoot clips based on bot state
     const wantAnim=(b.state==='shoot')?'shoot':'walk';
     if(wantAnim!==b._currentAnim){
-      b._mixer.stopAllAction();
-      const clip=(wantAnim==='shoot')?b._shootClip:b._walkClip;
-      if(clip){
-        const action=b._mixer.clipAction(clip);
-        action.reset();
-        // Shoot anim: play once then hold last frame; walk: loop
-        if(wantAnim==='shoot'){
-          action.setLoop(T.LoopRepeat,Infinity);
-          action.timeScale=1.4; // slightly faster for combat feel
-        } else {
-          action.setLoop(T.LoopRepeat,Infinity);
-          action.timeScale=(b.state==='seek')?1.2:0.8;
-        }
-        action.play();
+      const FADE=0.15;
+      const prev=b._actions[b._currentAnim];
+      const next=b._actions[wantAnim];
+      if(prev)prev.fadeOut(FADE);
+      if(next){
+        next.reset();
+        next.setEffectiveWeight(1);
+        next.fadeIn(FADE);
+        next.timeScale=(wantAnim==='shoot')?1.2:(b.state==='seek'?1.3:0.85);
+        next.setLoop(T.LoopRepeat,Infinity);
       }
       b._currentAnim=wantAnim;
     }
-    // Pause walk animation when idle (not moving)
-    if(b._currentAnim==='walk'&&b.state==='patrol'){
-      // slow walk speed for patrol
-      const action=b._mixer.clipAction(b._walkClip);
-      if(action)action.timeScale=0.7;
-    }
-    return; // mixer handles everything
+    return;
   }
 
   // ── Procedural animation fallback ──────────────────────────────────────
@@ -1835,35 +1923,13 @@ function movePlayer(dt){
   const moving=spd>0.001;
   const isJumping=pPos.y>GROUND_Y+0.12;
 
-  // ── Player animation state ────────────────────────────────────────────
-  // Determine desired animation
-  let wantPlayerAnim='idle';
-  if(isJumping) wantPlayerAnim='jump';
-  else if(G.isShooting) wantPlayerAnim='shoot';
-  else if(moving) wantPlayerAnim='walk';
-
-  if(playerGLBMixer&&playerGLBClips&&playerGLBClips.length>0){
-    // GLB mixer path
-    if(wantPlayerAnim!==playerGLBMixer._currentState){
-      playerGLBMixer._currentState=wantPlayerAnim;
-      playerGLBMixer.stopAllAction();
-      const walkNames=['Walk','walk','Walking','Run','run','Move','Armature|Walk'];
-      const idleNames=['Idle','idle','Stand','stand','Armature|Idle'];
-      const shootNames=['Shoot','shoot','Fire','fire','Attack','attack','Armature|Shoot'];
-      const jumpNames=['Jump','jump','Jumping','Armature|Jump'];
-      let clip=null;
-      const tryFind=(names)=>{for(const n of names){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c)return c;}return null;};
-      if(wantPlayerAnim==='jump') clip=tryFind(jumpNames)||tryFind(walkNames)||playerGLBClips[0];
-      else if(wantPlayerAnim==='shoot') clip=tryFind(shootNames)||tryFind(idleNames)||playerGLBClips[0];
-      else if(wantPlayerAnim==='walk') clip=tryFind(walkNames)||playerGLBClips[0];
-      else clip=tryFind(idleNames)||(playerGLBClips.length>1?playerGLBClips[1]:playerGLBClips[0]);
-      if(clip){
-        const a=playerGLBMixer.clipAction(clip);
-        a.reset();a.setLoop(T.LoopRepeat,Infinity);
-        a.timeScale=(wantPlayerAnim==='shoot')?1.3:(wantPlayerAnim==='walk'?1.0:1.0);
-        a.play();
-      }
-    }
+  // ── Player GLB animation state machine (crossfade) ────────────────────
+  if(playerGLBMixer&&playerGLBModel){
+    let wantAnim='idle';
+    if(isJumping)          wantAnim='jump';
+    else if(G.isShooting)  wantAnim='shoot';
+    else if(moving)        wantAnim='walk';
+    _setPlayerGLBAnim(wantAnim);
   } else if(playerMesh&&!playerGLBModel){
     // ── Procedural player animation (when Bro.glb not loaded / no clips) ──
     playerMesh._animT=(playerMesh._animT||0)+dt;
