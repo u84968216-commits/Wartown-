@@ -72,7 +72,7 @@ canvas{display:block;touch-action:none;}
 .citysvg svg{width:100%;display:block;}
 .mscan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;}
 .mfog{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,8,15,.98) 0%,transparent 22%,transparent 60%,rgba(5,8,15,.85) 100%);}
-.mui{position:relative;z-index:10;width:100%;height:100%;display:flex;flex-direction:column;}
+.mui{position:relative;z-index:10;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;gap:8px;flex-shrink:0;}
 .pcard{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px 11px;backdrop-filter:blur(16px);}
 .ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff6b35,#c0392b);border:2px solid rgba(255,107,53,.4);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;}
@@ -84,26 +84,40 @@ canvas{display:block;touch-action:none;}
 .gbtn{width:36px;height:36px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
 .gbtn:active{background:rgba(255,107,53,.15);}
 /* CENTER - flexible, shrinks on small screens */
-.mcenter{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:0;padding:4px 0;}
-.logo{font-size:clamp(28px,8vw,70px);font-weight:900;letter-spacing:clamp(3px,1vw,6px);text-transform:uppercase;background:linear-gradient(135deg,#ffffff 0%,#ffcc99 40%,#ff6b35 70%,#ff9955 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(255,107,53,.4));}
-.logsub{font-size:clamp(7px,1.5vw,9px);letter-spacing:clamp(5px,2vw,10px);color:rgba(255,107,53,.45);text-transform:uppercase;margin-top:-4px;text-align:center;}
+.mcenter{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:0;padding:4px 0;overflow:visible;}
+.logo{font-size:clamp(22px,7vw,70px);font-weight:900;letter-spacing:clamp(2px,1vw,6px);text-transform:uppercase;background:linear-gradient(135deg,#ffffff 0%,#ffcc99 40%,#ff6b35 70%,#ff9955 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(255,107,53,.4));}
+.logsub{font-size:clamp(7px,1.5vw,9px);letter-spacing:clamp(3px,2vw,10px);color:rgba(255,107,53,.45);text-transform:uppercase;margin-top:-4px;text-align:center;}
 .season{background:linear-gradient(135deg,rgba(255,107,53,.15),rgba(240,192,64,.08));border:1px solid rgba(255,107,53,.2);border-radius:20px;padding:3px 12px;font-size:8px;font-weight:800;letter-spacing:2px;color:rgba(255,107,53,.7);text-transform:uppercase;}
 .modepick{display:flex;gap:8px;}
-.mpbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 16px;cursor:pointer;transition:all .2s;min-width:80px;}
+.mpbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 14px;cursor:pointer;transition:all .2s;min-width:72px;}
 .mpbtn.active{background:rgba(255,107,53,.12);border-color:rgba(255,107,53,.3);}
 .mpbtn:active{transform:scale(.96);}
-.mpico{font-size:18px;line-height:1;}
+.mpico{font-size:16px;line-height:1;}
 .mptxt{font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
 .mpbtn.active .mptxt{color:rgba(255,107,53,.8);}
-.playbtn{width:min(200px,55vw);height:clamp(46px,7vh,58px);border:none;border-radius:30px;cursor:pointer;background:linear-gradient(135deg,#ff6b35,#c0392b);color:#fff;font-size:clamp(14px,2.5vw,18px);font-weight:900;letter-spacing:3px;text-transform:uppercase;box-shadow:0 6px 28px rgba(255,107,53,.45),0 0 50px rgba(255,107,53,.12);position:relative;overflow:hidden;transition:all .2s;}
+/* Play button — always visible, never clipped */
+.playbtn{display:block !important;visibility:visible !important;opacity:1 !important;width:min(220px,60vw);min-height:48px;height:clamp(48px,8vw,58px);border:none;border-radius:30px;cursor:pointer;background:linear-gradient(135deg,#ff6b35,#c0392b);color:#fff;font-size:clamp(14px,3.5vw,18px);font-weight:900;letter-spacing:3px;text-transform:uppercase;box-shadow:0 6px 28px rgba(255,107,53,.45),0 0 50px rgba(255,107,53,.12);position:relative;overflow:hidden;transition:transform .2s;flex-shrink:0;z-index:20;}
 .playbtn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent);}
 .playbtn::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(255,255,255,.07),transparent);transform:rotate(45deg);animation:shimmer 3s ease-in-out infinite;}
 @keyframes shimmer{0%,100%{transform:rotate(45deg) translateX(-200%)}50%{transform:rotate(45deg) translateX(200%)}}
 .playbtn:active{transform:scale(.95);}
-.bnav{display:flex;justify-content:center;gap:5px;padding:6px 10px 10px;flex-wrap:wrap;flex-shrink:0;}
-.nbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 12px;cursor:pointer;min-width:52px;transition:all .2s;}
+/* Nav bar */
+.bnav{display:flex;justify-content:center;gap:4px;padding:5px 8px 8px;flex-wrap:wrap;flex-shrink:0;}
+.nbtn{display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:7px 10px;cursor:pointer;min-width:48px;transition:all .2s;}
 .nbtn:active{background:rgba(255,107,53,.12);border-color:rgba(255,107,53,.25);transform:scale(.95);}
-.ni{font-size:clamp(16px,3vw,22px);}.nl{font-size:7px;font-weight:700;color:rgba(255,255,255,.38);letter-spacing:.5px;text-transform:uppercase;}
+.ni{font-size:clamp(15px,3vw,22px);}.nl{font-size:7px;font-weight:700;color:rgba(255,255,255,.38);letter-spacing:.5px;text-transform:uppercase;}
+/* Landscape mobile — shrink everything so play btn always shows */
+@media (max-height:420px){
+  .mcenter{gap:4px;padding:2px 0;}
+  .logo{font-size:clamp(18px,5vw,32px);}
+  .logsub,.season{display:none;}
+  .mpbtn{padding:4px 10px;min-width:60px;}
+  .mpico{font-size:13px;}
+  .playbtn{min-height:40px;height:40px;font-size:13px;letter-spacing:2px;}
+  .bnav{padding:3px 6px 6px;gap:3px;}
+  .nbtn{padding:5px 8px;min-width:42px;}
+  .ni{font-size:13px;}
+}
 
 /* PANELS - PREMIUM */
 .pov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(8px);}
@@ -1070,6 +1084,21 @@ function spawnBotWithGLB(botObj){
     scene.add(g);
     botObj.mesh=g;
 
+    // ── Attach a visible gun to GLB model ────────────────────────────────
+    const gm2=new T.MeshLambertMaterial({color:0x111111});
+    const gunBody=new T.Mesh(new T.BoxGeometry(.06,.1,.4),gm2);
+    const gunBarrel=new T.Mesh(new T.CylinderGeometry(.014,.014,.38,6),new T.MeshLambertMaterial({color:0x1a1a1a}));
+    gunBarrel.rotation.x=Math.PI/2;gunBarrel.position.z=-.38;
+    const gunGrip=new T.Mesh(new T.BoxGeometry(.04,.12,.055),new T.MeshLambertMaterial({color:0x0d0d0d}));
+    gunGrip.position.set(0,-.09,.04);gunGrip.rotation.x=.22;
+    const gunGroup2=new T.Group();
+    gunGroup2.add(gunBody);gunGroup2.add(gunBarrel);gunGroup2.add(gunGrip);
+    // Position gun in right-hand area of model
+    gunGroup2.position.set(.28,.85,.18);
+    gunGroup2.rotation.y=Math.PI;
+    gunGroup2.name='enemyGun';
+    g.add(gunGroup2);
+
     // ── Setup AnimationMixer ──────────────────────────────────────────────
     if(gltf.animations&&gltf.animations.length>0){
       console.log('🎬 ga.glb clips:',gltf.animations.map(a=>a.name));
@@ -1550,25 +1579,40 @@ function buildPlayerMesh(){
   const bm=new T.MeshLambertMaterial({color:0x224488}); // blue team default
   const sk=new T.MeshLambertMaterial({color:0xc89060});
   const hm=new T.MeshLambertMaterial({color:0x1c2e10});
-  // torso
-  const tr=new T.Mesh(new T.BoxGeometry(.52,.62,.28),bm);tr.position.y=1.1;g.add(tr);
+  const gm=new T.MeshLambertMaterial({color:0x111111});
+  const bk=new T.MeshLambertMaterial({color:0x111111});
+
+  // torso (named for procedural anim)
+  const torso=new T.Mesh(new T.BoxGeometry(.52,.62,.28),bm);torso.position.y=1.1;torso.name='pTorso';g.add(torso);
   // head
   const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.64;g.add(hd);
   // helmet
   const hl=new T.Mesh(new T.BoxGeometry(.36,.2,.36),hm);hl.position.y=1.78;g.add(hl);
-  // legs
-  [-.14,.14].forEach(ox=>{
-    const ul=new T.Mesh(new T.BoxGeometry(.2,.4,.2),bm);ul.position.set(ox,.48,0);g.add(ul);
-    const ll=new T.Mesh(new T.BoxGeometry(.18,.36,.18),bm);ll.position.set(ox,.1,0);g.add(ll);
-    const bt=new T.Mesh(new T.BoxGeometry(.2,.14,.26),new T.MeshLambertMaterial({color:0x111111}));bt.position.set(ox,-.09,.03);g.add(bt);
-  });
-  // arms
-  [-.36,.36].forEach(ox=>{
-    const ua=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);ua.position.set(ox,1.04,0);g.add(ua);
-    const la=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);la.position.set(ox,.74,0);g.add(la);
-  });
-  // gun held in right arm
-  const gb=new T.Mesh(new T.BoxGeometry(.07,.11,.42),new T.MeshLambertMaterial({color:0x111111}));gb.position.set(.38,.85,.22);g.add(gb);
+
+  // Legs — pivoted groups for animation
+  const legL=new T.Group();legL.name='pLegL';legL.position.set(-.14,.82,0);g.add(legL);
+  const ulL=new T.Mesh(new T.BoxGeometry(.2,.4,.2),bm);ulL.position.y=-.2;legL.add(ulL);
+  const llL=new T.Mesh(new T.BoxGeometry(.18,.36,.18),bm);llL.position.y=-.58;legL.add(llL);
+  const btL=new T.Mesh(new T.BoxGeometry(.2,.14,.26),bk);btL.position.set(0,-.77,.03);legL.add(btL);
+
+  const legR=new T.Group();legR.name='pLegR';legR.position.set(.14,.82,0);g.add(legR);
+  const ulR=new T.Mesh(new T.BoxGeometry(.2,.4,.2),bm);ulR.position.y=-.2;legR.add(ulR);
+  const llR=new T.Mesh(new T.BoxGeometry(.18,.36,.18),bm);llR.position.y=-.58;legR.add(llR);
+  const btR=new T.Mesh(new T.BoxGeometry(.2,.14,.26),bk);btR.position.set(0,-.77,.03);legR.add(btR);
+
+  // Arms — pivoted groups for animation
+  const armL=new T.Group();armL.name='pArmL';armL.position.set(-.36,1.12,0);g.add(armL);
+  const uaL=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);uaL.position.y=-.16;armL.add(uaL);
+  const laL=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);laL.position.y=-.44;armL.add(laL);
+
+  const armR=new T.Group();armR.name='pArmR';armR.position.set(.36,1.12,0);g.add(armR);
+  const uaR=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);uaR.position.y=-.16;armR.add(uaR);
+  const laR=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);laR.position.y=-.44;armR.add(laR);
+  // Gun in right hand
+  const gb=new T.Mesh(new T.BoxGeometry(.07,.11,.44),gm);gb.position.set(0,-.44,.22);armR.add(gb);
+  const gbrl=new T.Mesh(new T.CylinderGeometry(.013,.013,.36,6),new T.MeshLambertMaterial({color:0x1a1a1a}));gbrl.rotation.x=Math.PI/2;gbrl.position.set(0,-.44,.44);armR.add(gbrl);
+
+  g._animT=0;
   playerMesh=g;
   scene.add(playerMesh);
 }
@@ -1703,23 +1747,26 @@ function animateBot(b, dt){
   const t = mesh._animT;
 
   if(b.state==='patrol'||b.state==='seek'){
-    const swing = Math.sin(t * 8) * 0.45;
-    legL.rotation.x =  swing;
-    legR.rotation.x = -swing;
-    armL.rotation.x = -swing * 0.6;
-    armR.rotation.x =  swing * 0.6;
-    if(torso) torso.rotation.z = Math.sin(t * 8) * 0.04;
+    const swing=Math.sin(t*8)*0.45;
+    legL.rotation.x=swing; legR.rotation.x=-swing;
+    armL.rotation.x=-swing*0.6; armR.rotation.x=swing*0.6;
+    if(torso)torso.rotation.z=Math.sin(t*8)*0.04;
   } else if(b.state==='shoot'){
-    const bob = Math.sin(t * 18) * 0.06;
-    if(armR) armR.rotation.x = -1.1 + bob;
-    if(armL) armL.rotation.x = -0.8 + bob;
-    legL.rotation.x = 0; legR.rotation.x = 0;
-    if(torso) torso.rotation.z = Math.sin(t*18)*0.02;
+    // Combat stance: bent knees, both arms raised to aim forward
+    const bob=Math.sin(t*20)*0.05;
+    const breathe=Math.sin(t*2)*0.015;
+    legL.rotation.x=-0.22+breathe; legR.rotation.x=-0.22+breathe; // bent knees
+    if(armR) armR.rotation.x=-1.05+bob;  // right arm aims gun forward
+    if(armL) armL.rotation.x=-0.85+bob;  // left arm supports
+    if(armR) armR.rotation.z= 0.04;
+    if(armL) armL.rotation.z=-0.04;
+    if(torso){torso.rotation.x=-0.12;torso.rotation.z=Math.sin(t*20)*0.01;}
   } else {
-    legL.rotation.x = 0; legR.rotation.x = 0;
-    if(armL) armL.rotation.x = Math.sin(t*1.5)*0.05;
-    if(armR) armR.rotation.x = Math.sin(t*1.5)*0.05;
-    if(torso) torso.rotation.z = Math.sin(t*1.2)*0.02;
+    // Idle
+    legL.rotation.x*=0.8; legR.rotation.x*=0.8;
+    if(armL)armL.rotation.x=Math.sin(t*1.5)*0.05;
+    if(armR)armR.rotation.x=Math.sin(t*1.5)*0.05;
+    if(torso){torso.rotation.x=0;torso.rotation.z=Math.sin(t*1.2)*0.02;}
   }
 }
 
@@ -1786,26 +1833,75 @@ function movePlayer(dt){
   if(pPos.y<=GROUND_Y){pPos.y=GROUND_Y;pVelY=0;}
 
   const moving=spd>0.001;
+  const isJumping=pPos.y>GROUND_Y+0.12;
 
-  // ── Player GLB animation state ────────────────────────────────────────
+  // ── Player animation state ────────────────────────────────────────────
+  // Determine desired animation
+  let wantPlayerAnim='idle';
+  if(isJumping) wantPlayerAnim='jump';
+  else if(G.isShooting) wantPlayerAnim='shoot';
+  else if(moving) wantPlayerAnim='walk';
+
   if(playerGLBMixer&&playerGLBClips&&playerGLBClips.length>0){
-    const wantAnim=moving?'walk':'idle';
-    if(wantAnim!==playerGLBMixer._currentState){
-      playerGLBMixer._currentState=wantAnim;
+    // GLB mixer path
+    if(wantPlayerAnim!==playerGLBMixer._currentState){
+      playerGLBMixer._currentState=wantPlayerAnim;
       playerGLBMixer.stopAllAction();
-      // Try named clips, fallback to index
       const walkNames=['Walk','walk','Walking','Run','run','Move','Armature|Walk'];
       const idleNames=['Idle','idle','Stand','stand','Armature|Idle'];
+      const shootNames=['Shoot','shoot','Fire','fire','Attack','attack','Armature|Shoot'];
+      const jumpNames=['Jump','jump','Jumping','Armature|Jump'];
       let clip=null;
-      if(wantAnim==='walk'){
-        for(const n of walkNames){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c){clip=c;break;}}
-        if(!clip)clip=playerGLBClips[0];
-      } else {
-        for(const n of idleNames){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c){clip=c;break;}}
-        if(!clip&&playerGLBClips.length>1)clip=playerGLBClips[1];
-        if(!clip)clip=playerGLBClips[0];
+      const tryFind=(names)=>{for(const n of names){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c)return c;}return null;};
+      if(wantPlayerAnim==='jump') clip=tryFind(jumpNames)||tryFind(walkNames)||playerGLBClips[0];
+      else if(wantPlayerAnim==='shoot') clip=tryFind(shootNames)||tryFind(idleNames)||playerGLBClips[0];
+      else if(wantPlayerAnim==='walk') clip=tryFind(walkNames)||playerGLBClips[0];
+      else clip=tryFind(idleNames)||(playerGLBClips.length>1?playerGLBClips[1]:playerGLBClips[0]);
+      if(clip){
+        const a=playerGLBMixer.clipAction(clip);
+        a.reset();a.setLoop(T.LoopRepeat,Infinity);
+        a.timeScale=(wantPlayerAnim==='shoot')?1.3:(wantPlayerAnim==='walk'?1.0:1.0);
+        a.play();
       }
-      if(clip){const a=playerGLBMixer.clipAction(clip);a.reset();a.setLoop(T.LoopRepeat,Infinity);a.play();}
+    }
+  } else if(playerMesh&&!playerGLBModel){
+    // ── Procedural player animation (when Bro.glb not loaded / no clips) ──
+    playerMesh._animT=(playerMesh._animT||0)+dt;
+    const t=playerMesh._animT;
+    // Get limb groups by name
+    const pLegL=playerMesh.getObjectByName('pLegL');
+    const pLegR=playerMesh.getObjectByName('pLegR');
+    const pArmL=playerMesh.getObjectByName('pArmL');
+    const pArmR=playerMesh.getObjectByName('pArmR');
+    const pTorso=playerMesh.getObjectByName('pTorso');
+    if(pLegL&&pLegR){
+      if(isJumping){
+        // Jump — tuck legs up, arms out
+        pLegL.rotation.x=Math.max(pLegL.rotation.x-.1,-0.6);
+        pLegR.rotation.x=Math.max(pLegR.rotation.x-.1,-0.6);
+        if(pArmL)pArmL.rotation.x=-0.6;
+        if(pArmR)pArmR.rotation.x=-0.6;
+      } else if(G.isShooting){
+        // Shoot — both arms up/forward, legs still
+        const bob=Math.sin(t*22)*0.05;
+        pLegL.rotation.x*=0.8; pLegR.rotation.x*=0.8;
+        if(pArmL)pArmL.rotation.x=-1.1+bob;
+        if(pArmR)pArmR.rotation.x=-1.15+bob;
+        if(pTorso)pTorso.rotation.z=Math.sin(t*22)*0.015;
+      } else if(moving){
+        // Walk cycle
+        const swing=Math.sin(t*8)*0.5;
+        pLegL.rotation.x=swing; pLegR.rotation.x=-swing;
+        if(pArmL)pArmL.rotation.x=-swing*0.55;
+        if(pArmR)pArmR.rotation.x=swing*0.55;
+        if(pTorso)pTorso.rotation.z=Math.sin(t*8)*0.04;
+      } else {
+        // Idle sway
+        pLegL.rotation.x*=0.85; pLegR.rotation.x*=0.85;
+        if(pArmL)pArmL.rotation.x=Math.sin(t*1.4)*0.05;
+        if(pArmR)pArmR.rotation.x=Math.sin(t*1.4+0.5)*0.05;
+        if(pTorso)pTorso.rotation.z=Math.sin(t*1.2)*0.02;
+      }
     }
   }
 
