@@ -930,6 +930,13 @@ let lastSyncTime=0;
 // Enemy GLB — store raw buffer so each bot re-parses its own fresh copy
 let enemyGLB=null;
 let enemyGLBBuffer=null; // raw ArrayBuffer kept for cloning
+// Player GLB (Bro.glb)
+let playerGLBBuffer=null;
+let playerGLBMixer=null;     // AnimationMixer for player model
+let playerGLBClips=null;     // animation clips from Bro.glb
+let playerGLBModel=null;     // the actual loaded model group inside playerMesh
+// Clock for animation mixers
+let _glbClock=null;
 
 function loadEnemyModel(onDone){
   const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
@@ -950,6 +957,69 @@ function loadEnemyModel(onDone){
       },err=>{console.error('GLB parse err:',err);onDone();});
     })
     .catch(err=>{console.warn('⚠️ ga.glb not found:',err.message);onDone();});
+}
+
+// ─── PLAYER GLB LOADER (Bro.glb) ─────────────────────────────────────────────
+function loadPlayerModel(onDone){
+  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+  if(!GLTFLoader){onDone();return;}
+  const href=window.location.href.split('?')[0].split('#')[0];
+  const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
+  const url=base+'Bro.glb';
+  console.log('🔄 Loading player:',url);
+  fetch(url)
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.arrayBuffer();})
+    .then(buf=>{
+      playerGLBBuffer=buf;
+      const loader=new GLTFLoader();
+      loader.parse(buf.slice(0),base,gltf=>{
+        console.log('✅ Bro.glb loaded, clips:',gltf.animations.map(a=>a.name));
+        playerGLBClips=gltf.animations;
+        _attachPlayerGLB(gltf);
+        onDone();
+      },err=>{console.error('Bro.glb parse err:',err);onDone();});
+    })
+    .catch(err=>{console.warn('⚠️ Bro.glb not found:',err.message);onDone();});
+}
+
+function _attachPlayerGLB(gltf){
+  if(!playerMesh)return;
+  // Remove old procedural children
+  while(playerMesh.children.length>0)playerMesh.remove(playerMesh.children[0]);
+
+  const mdl=gltf.scene;
+  mdl.traverse(c=>{
+    if(c.isMesh){c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;if(c.material)c.material.side=T.FrontSide;}
+  });
+  // Scale to ~1.8m tall
+  const box=new T.Box3().setFromObject(mdl);
+  const sz=box.getSize(new T.Vector3());
+  const tall=Math.max(sz.x,sz.y,sz.z);
+  if(tall>0){const sc=1.8/tall;mdl.scale.set(sc,sc,sc);}
+  // Ground-align
+  const box2=new T.Box3().setFromObject(mdl);
+  mdl.position.y-=box2.min.y;
+
+  playerMesh.add(mdl);
+  playerGLBModel=mdl;
+
+  // Setup mixer
+  playerGLBMixer=new T.AnimationMixer(mdl);
+  if(playerGLBClips&&playerGLBClips.length>0){
+    // Auto-play first clip (usually idle/walk)
+    const clip=playerGLBClips[0];
+    const action=playerGLBMixer.clipAction(clip);
+    action.play();
+  }
+}
+
+// Play a named animation clip on the player mixer
+function playPlayerAnim(name){
+  if(!playerGLBMixer||!playerGLBClips)return;
+  const clip=T.AnimationClip.findByName(playerGLBClips,name);
+  if(!clip)return;
+  playerGLBMixer.stopAllAction();
+  playerGLBMixer.clipAction(clip).play();
 }
 
 function _prepGLB(gltf){
@@ -981,9 +1051,45 @@ function spawnBotWithGLB(botObj){
   const ph=new T.Group();ph.position.set(botObj.x,0,botObj.z);scene.add(ph);botObj.mesh=ph;
   new GLTFLoader().parse(enemyGLBBuffer.slice(0),base,gltf=>{
     scene.remove(ph);
-    const g=new T.Group();g.add(_prepGLB(gltf));
-    _addHPBar(g);g.position.set(botObj.x,0,botObj.z);
-    scene.add(g);botObj.mesh=g;
+    const mdl=gltf.scene;
+    mdl.traverse(c=>{
+      if(c.isMesh){c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;if(c.material)c.material.side=T.FrontSide;}
+    });
+    // Scale
+    const box=new T.Box3().setFromObject(mdl);
+    const sz=box.getSize(new T.Vector3());
+    const tall=Math.max(sz.x,sz.y,sz.z);
+    if(tall>0){const sc=1.8/tall;mdl.scale.set(sc,sc,sc);}
+    const box2=new T.Box3().setFromObject(mdl);
+    mdl.position.y-=box2.min.y;
+
+    const g=new T.Group();
+    g.add(mdl);
+    _addHPBar(g);
+    g.position.set(botObj.x,0,botObj.z);
+    scene.add(g);
+    botObj.mesh=g;
+
+    // ── Setup AnimationMixer ──────────────────────────────────────────────
+    if(gltf.animations&&gltf.animations.length>0){
+      console.log('🎬 ga.glb clips:',gltf.animations.map(a=>a.name));
+      const mixer=new T.AnimationMixer(mdl);
+      botObj._mixer=mixer;
+      botObj._clips=gltf.animations;
+      // Try to find walk/idle clip by name (common names)
+      const walkNames=['Walk','walk','walking','Walking','Run','run','Move','move','Armature|Walk'];
+      const shootNames=['Shoot','shoot','Fire','fire','Attack','attack','Armature|Shoot'];
+      let walkClip=null,shootClip=null;
+      for(const n of walkNames){const c=T.AnimationClip.findByName(gltf.animations,n);if(c){walkClip=c;break;}}
+      for(const n of shootNames){const c=T.AnimationClip.findByName(gltf.animations,n);if(c){shootClip=c;break;}}
+      // Fallback: first clip = walk, second = shoot
+      if(!walkClip&&gltf.animations.length>=1)walkClip=gltf.animations[0];
+      if(!shootClip&&gltf.animations.length>=2)shootClip=gltf.animations[1];
+      botObj._walkClip=walkClip;
+      botObj._shootClip=shootClip;
+      // Start with walk
+      if(walkClip){const a=mixer.clipAction(walkClip);a.play();botObj._currentAnim='walk';}
+    }
   },()=>{scene.remove(ph);botObj.mesh=makeProceduralBot();botObj.mesh.position.set(botObj.x,0,botObj.z);scene.add(botObj.mesh);});
 }
 
@@ -1075,7 +1181,9 @@ async function _startEngine(lobbyData){
   setLoad(65,'Loading enemy model...');
 
   loadEnemyModel(()=>{
-    setLoad(72,'Spawning...');
+    setLoad(72,'Loading player model...');
+    loadPlayerModel(()=>{
+    setLoad(78,'Spawning...');
     if(G.isPractice){
       spawnBots(G.botCount,G.botDiff);
     } else if(lobbyData){
@@ -1110,12 +1218,15 @@ async function _startEngine(lobbyData){
           updateMM();
           if(!G.isPractice&&CUR_USER)pushMyPos(now);
           syncRemotePlayers();
+          // Update player GLB mixer
+          if(playerGLBMixer)playerGLBMixer.update(dt);
         }
         renderer.render(scene,camera);
         animId=requestAnimationFrame(loop);
       }
       animId=requestAnimationFrame(loop);
     },380);
+  }); // end loadPlayerModel callback
   }); // end loadEnemyModel callback
 
   window.onresize=()=>{if(!renderer)return;renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();};
@@ -1434,6 +1545,7 @@ function addLights(){
 
 function buildPlayerMesh(){
   if(playerMesh){scene.remove(playerMesh);playerMesh=null;}
+  playerGLBMixer=null; playerGLBModel=null; playerGLBClips=null;
   const g=new T.Group();
   const bm=new T.MeshLambertMaterial({color:0x224488}); // blue team default
   const sk=new T.MeshLambertMaterial({color:0xc89060});
@@ -1545,19 +1657,52 @@ function _addHPBar(g){
 
 function animateBot(b, dt){
   if(!b.mesh) return;
+
+  // ── GLB model with AnimationMixer ──────────────────────────────────────
+  if(b._mixer){
+    b._mixer.update(dt);
+    // Switch between walk and shoot clips based on bot state
+    const wantAnim=(b.state==='shoot')?'shoot':'walk';
+    if(wantAnim!==b._currentAnim){
+      b._mixer.stopAllAction();
+      const clip=(wantAnim==='shoot')?b._shootClip:b._walkClip;
+      if(clip){
+        const action=b._mixer.clipAction(clip);
+        action.reset();
+        // Shoot anim: play once then hold last frame; walk: loop
+        if(wantAnim==='shoot'){
+          action.setLoop(T.LoopRepeat,Infinity);
+          action.timeScale=1.4; // slightly faster for combat feel
+        } else {
+          action.setLoop(T.LoopRepeat,Infinity);
+          action.timeScale=(b.state==='seek')?1.2:0.8;
+        }
+        action.play();
+      }
+      b._currentAnim=wantAnim;
+    }
+    // Pause walk animation when idle (not moving)
+    if(b._currentAnim==='walk'&&b.state==='patrol'){
+      // slow walk speed for patrol
+      const action=b._mixer.clipAction(b._walkClip);
+      if(action)action.timeScale=0.7;
+    }
+    return; // mixer handles everything
+  }
+
+  // ── Procedural animation fallback ──────────────────────────────────────
   const mesh = b.mesh;
   const legL = mesh.getObjectByName('legL');
   const legR = mesh.getObjectByName('legR');
   const armL = mesh.getObjectByName('armL');
   const armR = mesh.getObjectByName('armR');
   const torso = mesh.getObjectByName('torso');
-  if(!legL||!legR) return; // GLB model — no named parts, skip
+  if(!legL||!legR) return;
 
   mesh._animT = (mesh._animT||0) + dt;
   const t = mesh._animT;
 
   if(b.state==='patrol'||b.state==='seek'){
-    // Walk cycle — legs swing opposite, arms swing opposite
     const swing = Math.sin(t * 8) * 0.45;
     legL.rotation.x =  swing;
     legR.rotation.x = -swing;
@@ -1565,14 +1710,12 @@ function animateBot(b, dt){
     armR.rotation.x =  swing * 0.6;
     if(torso) torso.rotation.z = Math.sin(t * 8) * 0.04;
   } else if(b.state==='shoot'){
-    // Shooting pose — arms raised, slight body bob
     const bob = Math.sin(t * 18) * 0.06;
-    if(armR) armR.rotation.x = -1.1 + bob; // raise right arm to aim
+    if(armR) armR.rotation.x = -1.1 + bob;
     if(armL) armL.rotation.x = -0.8 + bob;
     legL.rotation.x = 0; legR.rotation.x = 0;
     if(torso) torso.rotation.z = Math.sin(t*18)*0.02;
   } else {
-    // Idle — tiny sway
     legL.rotation.x = 0; legR.rotation.x = 0;
     if(armL) armL.rotation.x = Math.sin(t*1.5)*0.05;
     if(armR) armR.rotation.x = Math.sin(t*1.5)*0.05;
@@ -1643,6 +1786,28 @@ function movePlayer(dt){
   if(pPos.y<=GROUND_Y){pPos.y=GROUND_Y;pVelY=0;}
 
   const moving=spd>0.001;
+
+  // ── Player GLB animation state ────────────────────────────────────────
+  if(playerGLBMixer&&playerGLBClips&&playerGLBClips.length>0){
+    const wantAnim=moving?'walk':'idle';
+    if(wantAnim!==playerGLBMixer._currentState){
+      playerGLBMixer._currentState=wantAnim;
+      playerGLBMixer.stopAllAction();
+      // Try named clips, fallback to index
+      const walkNames=['Walk','walk','Walking','Run','run','Move','Armature|Walk'];
+      const idleNames=['Idle','idle','Stand','stand','Armature|Idle'];
+      let clip=null;
+      if(wantAnim==='walk'){
+        for(const n of walkNames){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c){clip=c;break;}}
+        if(!clip)clip=playerGLBClips[0];
+      } else {
+        for(const n of idleNames){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c){clip=c;break;}}
+        if(!clip&&playerGLBClips.length>1)clip=playerGLBClips[1];
+        if(!clip)clip=playerGLBClips[0];
+      }
+      if(clip){const a=playerGLBMixer.clipAction(clip);a.reset();a.setLoop(T.LoopRepeat,Infinity);a.play();}
+    }
+  }
 
   // ── Camera ────────────────────────────────────────────────────────────────
   if(G.camMode==='third'){
