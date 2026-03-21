@@ -394,6 +394,117 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(255,107,53,.92),rgba(180,40,20,.92));color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:800;z-index:9999;pointer-events:none;white-space:nowrap;animation:ta 2.4s ease-out forwards;letter-spacing:.5px;}
 @keyframes ta{0%{opacity:0;transform:translateX(-50%) translateY(8px)}10%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1}100%{opacity:0}}
 .plabel{position:fixed;pointer-events:none;z-index:400;font-size:9px;font-weight:800;text-shadow:0 1px 4px #000;transform:translate(-50%,-100%);white-space:nowrap;}
+/* ── INVENTORY WHEEL ──────────────────────────────────────────────────── */
+#invOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.78);
+  display:none;align-items:center;justify-content:center;
+  z-index:800;backdrop-filter:blur(5px);
+  touch-action:none;
+}
+#invOverlay.open{display:flex;}
+/* Wheel wrapper — capped small so it always fits on phone */
+.inv-wrap{
+  position:relative;
+  width:min(62vw,260px);
+  height:min(62vw,260px);
+}
+/* Outer ring */
+.inv-ring{
+  position:absolute;inset:0;border-radius:50%;
+  background:rgba(20,25,40,.88);
+  border:2px solid rgba(255,255,255,.2);
+  box-shadow:0 0 32px rgba(0,0,0,.6),inset 0 0 16px rgba(0,0,0,.4);
+}
+/* Center fist/close button */
+.inv-center{
+  position:absolute;top:50%;left:50%;
+  width:24%;height:24%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,.07));
+  border:2px solid rgba(255,255,255,.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(14px,4vw,20px);
+  cursor:pointer;
+  box-shadow:0 0 14px rgba(0,0,0,.5);
+  z-index:10;
+  transition:background .12s;
+}
+.inv-center:active{background:rgba(255,107,53,.4);}
+/* Slot segments */
+.inv-slot{
+  position:absolute;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;cursor:pointer;
+  transition:filter .12s,transform .12s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.inv-slot:active{transform:scale(.93);filter:brightness(1.3);}
+.inv-slot.sel .inv-slot-icon{border-color:rgba(255,210,50,.95);box-shadow:0 0 10px rgba(255,200,50,.5);}
+/* Slot icon box — smaller */
+.inv-slot-icon{
+  width:clamp(34px,8vw,44px);
+  height:clamp(34px,8vw,44px);
+  border-radius:10px;
+  background:rgba(255,255,255,.09);
+  border:2px solid rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(15px,4vw,20px);
+  position:relative;
+  box-shadow:0 3px 8px rgba(0,0,0,.45);
+  transition:border-color .12s,box-shadow .12s;
+}
+.inv-eq-badge{
+  position:absolute;bottom:-5px;right:-5px;
+  background:#ff6b35;border-radius:3px;
+  font-size:5px;font-weight:900;padding:1px 2px;color:#fff;
+  border:1px solid #000;
+}
+.inv-slot-name{
+  font-size:clamp(6px,1.6vw,8px);
+  font-weight:800;color:rgba(255,255,255,.8);
+  text-transform:uppercase;letter-spacing:.4px;
+  text-align:center;max-width:56px;line-height:1.2;
+}
+.inv-slot-stat{font-size:clamp(5px,1.3vw,7px);color:rgba(255,200,50,.9);font-weight:700;}
+/* Section labels */
+.inv-label{
+  position:absolute;
+  font-size:clamp(6px,1.5vw,8px);font-weight:900;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,.4);
+  pointer-events:none;white-space:nowrap;
+}
+/* Divider lines between quadrants */
+.inv-divider{
+  position:absolute;top:50%;left:50%;
+  width:50%;height:1px;
+  background:rgba(255,255,255,.1);
+  transform-origin:left center;
+  pointer-events:none;
+}
+/* Equip info bar */
+.inv-equip-bar{
+  position:absolute;bottom:-42px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;padding:6px 14px;
+  white-space:nowrap;font-size:10px;color:#fff;font-weight:700;
+  letter-spacing:.4px;display:none;
+}
+.inv-equip-bar.show{display:block;}
+/* In-game INVENTORY button */
+#invBtn{
+  position:absolute;top:1vh;left:1.5vw;
+  width:min(7.5vw,36px);height:min(7.5vw,36px);
+  border-radius:9px;
+  background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.85);font-size:min(3.5vw,14px);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;touch-action:manipulation;pointer-events:all;
+  z-index:20;
+}
+#invBtn:active{background:rgba(255,107,53,.3);}
 /* Crosshair duplicate handled above */
 </style>
 </head>
@@ -527,20 +638,22 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div id="lookZone"></div>
     <!-- Forward button (replaces joystick) -->
     <div id="fwdBtn"><div class="fwdico">▲</div><div class="fwdlbl">Move</div></div>
-    <!-- Left buttons: AIM, JUMP -->
+    <!-- Left buttons: AIM, RELOAD (swapped) -->
     <div id="actLeft">
       <div class="abtn" id="aimBtn" style="border-color:rgba(0,200,255,.35)">🎯<span>AIM</span></div>
-      <div class="abtn" id="jumpBtn">⬆<span>JUMP</span></div>
+      <div class="abtn" id="reloadBtn">⟳<span>RELOAD</span></div>
     </div>
     <!-- Right shoot zone — FIRE + LOOK -->
     <div id="shootZone"><div class="sout"></div><div class="sin" id="shootKnob"><div class="si">🔥</div><div class="sl2">FIRE</div></div></div>
-    <!-- Right buttons: NADE, RELOAD -->
+    <!-- Right buttons: NADE, JUMP (swapped) -->
     <div id="actRight">
       <div class="abtn" id="nadeBtn" style="position:relative">💣<span>NADE</span><div class="nbadge" id="nb">2</div></div>
-      <div class="abtn" id="reloadBtn">⟳<span>RELOAD</span></div>
+      <div class="abtn" id="jumpBtn">⬆<span>JUMP</span></div>
     </div>
     <!-- Pause top-right -->
     <div id="pauseBtn">⏸</div>
+    <!-- Inventory button top-left -->
+    <div id="invBtn" onclick="openInventory()">🎒</div>
     <!-- Camera toggle button — bottom center -->
     <div id="camBtn" class="tp">👁 3RD</div>
   </div>
@@ -551,6 +664,27 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div class="etit" id="etit">VICTORY!</div>
     <div class="estats"><div class="estat"><div class="esv" id="eK">0</div><div class="esl">Kills</div></div><div class="estat"><div class="esv" id="eD">0</div><div class="esl">Deaths</div></div><div class="estat"><div class="esv" id="eA">0</div><div class="esl">Assists</div></div></div>
     <div style="display:flex;gap:9px;margin-top:8px"><button class="btn btnp" onclick="backToMenu()">Main Menu</button><button class="btn btns" onclick="restartGame()">Play Again</button></div>
+  </div>
+</div><!-- end #gameScreen -->
+
+<!-- INVENTORY WHEEL OVERLAY — position:fixed, lives outside all screens -->
+<div id="invOverlay">
+  <div class="inv-wrap" id="invWrap">
+    <div class="inv-ring"></div>
+    <div class="inv-divider" style="transform:rotate(45deg)"></div>
+    <div class="inv-divider" style="transform:rotate(135deg)"></div>
+    <div class="inv-divider" style="transform:rotate(-45deg)"></div>
+    <div class="inv-divider" style="transform:rotate(-135deg)"></div>
+    <div class="inv-label" style="top:4%;left:50%;transform:translateX(-50%)">Heavy</div>
+    <div class="inv-label" style="bottom:4%;left:50%;transform:translateX(-50%)">Side</div>
+    <div class="inv-label" style="left:2%;top:50%;transform:translateY(-50%)">Light</div>
+    <div class="inv-label" style="right:2%;top:50%;transform:translateY(-50%)">Melee</div>
+    <div class="inv-slot" id="inv-heavy" style="top:10%;left:50%;transform:translateX(-50%)"></div>
+    <div class="inv-slot" id="inv-side"  style="bottom:10%;left:50%;transform:translateX(-50%)"></div>
+    <div class="inv-slot" id="inv-light" style="left:8%;top:50%;transform:translateY(-50%)"></div>
+    <div class="inv-slot" id="inv-melee" style="right:8%;top:50%;transform:translateY(-50%)"></div>
+    <div class="inv-center" id="invClose" onclick="closeInventory()">✊</div>
+    <div class="inv-equip-bar" id="invEquipBar">Tap a slot to equip</div>
   </div>
 </div>
 
@@ -565,24 +699,34 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 
 <div class="pov" id="loadoutP"><div class="pan">
   <div class="ph"><div class="pt">🔫 Loadout</div><button class="xb" onclick="closeP('loadoutP')">✕</button></div>
-  <div class="seclbl">Primary</div>
+  <div class="seclbl">Heavy Slot</div>
   <div class="wgrid" id="primG">
-    <div class="wcard sel" onclick="pickW(this,'primary','AR')"><div class="wico">🔫</div><div class="wname">Assault Rifle</div><div class="wstat">DMG 35·RPM 600·Long</div></div>
-    <div class="wcard" onclick="pickW(this,'primary','SMG')"><div class="wico">🔫</div><div class="wname">SMG</div><div class="wstat">DMG 22·RPM 900·Short</div></div>
-    <div class="wcard" onclick="pickW(this,'primary','Sniper')"><div class="wico">🎯</div><div class="wname">Sniper</div><div class="wstat">DMG 95·RPM 45·XLong</div></div>
-    <div class="wcard" onclick="pickW(this,'primary','Shotgun')"><div class="wico">💥</div><div class="wname">Shotgun</div><div class="wstat">DMG 80·RPM 60·Close</div></div>
+    <div class="wcard sel" onclick="pickW(this,'heavy','AR')"><div class="wico">🔫</div><div class="wname">Assault Rifle</div><div class="wstat">DMG 35·RPM 600</div></div>
+    <div class="wcard" onclick="pickW(this,'heavy','Sniper')"><div class="wico">🎯</div><div class="wname">Sniper Rifle</div><div class="wstat">DMG 95·RPM 50</div></div>
+    <div class="wcard" onclick="pickW(this,'heavy','Shotgun')"><div class="wico">💥</div><div class="wname">Shotgun</div><div class="wstat">DMG 80·RPM 75</div></div>
+    <div class="wcard" onclick="pickW(this,'heavy','LMG')"><div class="wico">🔫</div><div class="wname">LMG</div><div class="wstat">DMG 28·RPM 750</div></div>
+    <div class="wcard" onclick="pickW(this,'heavy','Carbine')"><div class="wico">🔫</div><div class="wname">Carbine</div><div class="wstat">DMG 42·RPM 460</div></div>
   </div>
-  <div class="seclbl">Secondary</div>
+  <div class="seclbl">Side Slot</div>
   <div class="wgrid" id="secG">
-    <div class="wcard sel" onclick="pickW(this,'secondary','Pistol')"><div class="wico">🔫</div><div class="wname">Pistol</div><div class="wstat">DMG 28·RPM 400</div></div>
-    <div class="wcard" onclick="pickW(this,'secondary','Desert')"><div class="wico">🔫</div><div class="wname">Desert Eagle</div><div class="wstat">DMG 55·RPM 200</div></div>
+    <div class="wcard sel" onclick="pickW(this,'side','SMG')"><div class="wico">🔫</div><div class="wname">SMG</div><div class="wstat">DMG 22·RPM 900</div></div>
+  </div>
+  <div class="seclbl">Light Slot</div>
+  <div class="wgrid" id="ltG">
+    <div class="wcard sel" onclick="pickW(this,'light','Pistol')"><div class="wico">🔫</div><div class="wname">Pistol</div><div class="wstat">DMG 28·RPM 400</div></div>
+    <div class="wcard" onclick="pickW(this,'light','Desert')"><div class="wico">🔫</div><div class="wname">Desert Eagle</div><div class="wstat">DMG 55·RPM 200</div></div>
+    <div class="wcard" onclick="pickW(this,'light','Revolver')"><div class="wico">🔫</div><div class="wname">Revolver</div><div class="wstat">DMG 70·RPM 100</div></div>
+  </div>
+  <div class="seclbl">Melee Slot</div>
+  <div class="wgrid" id="melG">
+    <div class="wcard sel" onclick="pickW(this,'melee','Knife')"><div class="wico">🗡️</div><div class="wname">Knife</div><div class="wstat">DMG 45·Instant</div></div>
   </div>
   <div class="seclbl">Grenade</div>
   <div class="wgrid" id="grenG">
     <div class="wcard sel" onclick="pickW(this,'grenade','Frag')"><div class="wico">💣</div><div class="wname">Frag</div><div class="wstat">DMG 100·R5m</div></div>
     <div class="wcard" onclick="pickW(this,'grenade','Flash')"><div class="wico">💡</div><div class="wname">Flashbang</div><div class="wstat">Blind 3s·R8m</div></div>
   </div>
-  <button class="btn btnp" style="margin-top:11px;width:100%" onclick="saveLoadout()">Save</button>
+  <button class="btn btnp" style="margin-top:11px;width:100%" onclick="saveLoadout()">Save Loadout</button>
 </div></div>
 
 <div class="pov" id="profileP"><div class="pan">
@@ -788,15 +932,92 @@ function openLB(){
 }
 
 // ─── LOADOUT ─────────────────────────────────────────────────────────────────
-function pickW(el,type,name){
-  const gid=type==='primary'?'primG':type==='secondary'?'secG':'grenG';
-  document.getElementById(gid).querySelectorAll('.wcard').forEach(c=>c.classList.remove('sel'));
+function pickW(el,slot,name){
+  const gridMap={heavy:'primG',side:'secG',light:'ltG',melee:'melG',grenade:'grenG',
+                 primary:'primG',secondary:'secG'};
+  const gid=gridMap[slot]||'primG';
+  const grid=document.getElementById(gid);
+  if(grid)grid.querySelectorAll('.wcard').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
-  if(type==='primary')G.primaryWeapon=name;
-  else if(type==='secondary')G.secondaryWeapon=name;
-  else G.grenade=name;
+  if(slot==='heavy'||slot==='primary') G.primaryWeapon=name;
+  else if(slot==='side') G.sideWeapon=name;
+  else if(slot==='light'||slot==='secondary') G.secondaryWeapon=name;
+  else if(slot==='melee') G.meleeWeapon=name;
+  else if(slot==='grenade') G.grenade=name;
+  // Also update inventory display
+  renderInventorySlots();
 }
-function saveLoadout(){closeP('loadoutP');toast('Loadout saved!');}
+function saveLoadout(){closeP('loadoutP');toast('Loadout saved!');renderInventorySlots();}
+
+// ─── INVENTORY WHEEL ─────────────────────────────────────────────────────────
+// Slot definitions: which weapon key, which game state prop
+const INV_SLOTS={
+  heavy: {prop:'primaryWeapon',  label:'Heavy',  icon:'🔫'},
+  side:  {prop:'sideWeapon',     label:'Side',   icon:'🔫'},
+  light: {prop:'secondaryWeapon',label:'Light',  icon:'🔫'},
+  melee: {prop:'meleeWeapon',    label:'Melee',  icon:'🗡️'},
+};
+
+function renderInventorySlots(){
+  Object.entries(INV_SLOTS).forEach(([slotId,cfg])=>{
+    const el=document.getElementById('inv-'+slotId);
+    if(!el)return;
+    const wKey=G[cfg.prop]||'';
+    const wd=WD[wKey];
+    const isActive=wKey===G.primaryWeapon&&slotId==='heavy';
+    el.innerHTML=`
+      <div class="inv-slot-icon">${wd?wd.icon:cfg.icon}${wd?'<span class="inv-eq-badge">EQ</span>':''}</div>
+      <div class="inv-slot-name">${wd?wd.name:cfg.label}</div>
+      <div class="inv-slot-stat">${wd?'DMG '+wd.dmg:'Empty'}</div>`;
+    el.classList.toggle('sel',isActive);
+  });
+}
+
+function openInventory(){
+  renderInventorySlots();
+  document.getElementById('invOverlay').classList.add('open');
+  G.isPaused=true; stopShooting();
+}
+
+function closeInventory(){
+  document.getElementById('invOverlay').classList.remove('open');
+  document.getElementById('invEquipBar').classList.remove('show');
+  G.isPaused=false;
+}
+
+// Attach inventory slot tap listeners (called once after DOM ready)
+function _attachInvListeners(){
+  ['heavy','side','light','melee'].forEach(slotId=>{
+    const el=document.getElementById('inv-'+slotId);
+    if(!el)return;
+    el.onclick=()=>equipSlot(slotId);
+    el.addEventListener('touchstart',e=>{e.stopPropagation();equipSlot(slotId);},{passive:true});
+  });
+  // Close overlay on background tap
+  document.getElementById('invOverlay').addEventListener('touchstart',e=>{
+    if(e.target===document.getElementById('invOverlay'))closeInventory();
+  },{passive:true});
+  document.getElementById('invOverlay').addEventListener('click',e=>{
+    if(e.target===document.getElementById('invOverlay'))closeInventory();
+  });
+}
+
+function equipSlot(slotId){
+  const cfg=INV_SLOTS[slotId];if(!cfg)return;
+  const wKey=G[cfg.prop];
+  if(!wKey||!WD[wKey]){toast('No weapon in '+cfg.label+' slot!');return;}
+  G.primaryWeapon=wKey;
+  const w=WD[wKey];
+  G.ammo=w.ammo;G.ammoReserve=w.res;
+  updateHUD();
+  buildGun(); // rebuild 3D gun model
+  const bar=document.getElementById('invEquipBar');
+  bar.textContent='✅ Equipped: '+w.name;
+  bar.classList.add('show');
+  setTimeout(()=>bar.classList.remove('show'),1600);
+  renderInventorySlots();
+  toast('Equipped '+w.name);
+}
 
 // ─── SHOP ────────────────────────────────────────────────────────────────────
 function buyItem(name,price){
@@ -867,23 +1088,27 @@ function leaveLobby(){
 
 // ─── GAME STATE ──────────────────────────────────────────────────────────────
 const G={
-  primaryWeapon:'AR',secondaryWeapon:'Pistol',grenade:'Frag',
+  primaryWeapon:'AR',secondaryWeapon:'Pistol',sideWeapon:'SMG',meleeWeapon:'Knife',grenade:'Frag',
   kills:0,deaths:0,assists:0,scoreBlue:0,scoreRed:0,
   matchActive:false,isPaused:false,
   isReloading:false,isShooting:false,isAiming:false,
   ammo:30,ammoReserve:120,grenades:2,
   sens:5,joyX:0,joyY:0,myTeam:'blue',
   isPractice:false,botCount:4,botDiff:'medium',
-  camMode:'third', // 'third' or 'first'
+  camMode:'third',
 };
 
 const WD={
-  AR:    {dmg:35,rof:100, ammo:30,res:120,spread:.030,name:'Assault Rifle',icon:'🔫'},
-  SMG:   {dmg:22,rof:66,  ammo:25,res:200,spread:.050,name:'SMG',          icon:'🔫'},
-  Sniper:{dmg:95,rof:1200,ammo:5, res:20, spread:.002,name:'Sniper',       icon:'🎯'},
-  Shotgun:{dmg:80,rof:800,ammo:6, res:24, spread:.180,name:'Shotgun',      icon:'💥'},
-  Pistol:{dmg:28,rof:250, ammo:12,res:60, spread:.040,name:'Pistol',       icon:'🔫'},
-  Desert:{dmg:55,rof:400, ammo:7, res:28, spread:.025,name:'Desert Eagle', icon:'🔫'},
+  AR:     {dmg:35, rof:100,  ammo:30, res:120, spread:.030, name:'Assault Rifle',  icon:'🔫', slot:'heavy'},
+  SMG:    {dmg:22, rof:66,   ammo:25, res:200, spread:.050, name:'SMG',            icon:'🔫', slot:'side'},
+  Sniper: {dmg:95, rof:1200, ammo:5,  res:20,  spread:.002, name:'Sniper Rifle',   icon:'🎯', slot:'heavy'},
+  Shotgun:{dmg:80, rof:800,  ammo:6,  res:24,  spread:.180, name:'Shotgun',        icon:'💥', slot:'heavy'},
+  LMG:    {dmg:28, rof:80,   ammo:60, res:180, spread:.045, name:'LMG',            icon:'🔫', slot:'heavy'},
+  Carbine:{dmg:42, rof:130,  ammo:20, res:100, spread:.022, name:'Carbine',        icon:'🔫', slot:'heavy'},
+  Pistol: {dmg:28, rof:250,  ammo:12, res:60,  spread:.040, name:'Pistol',         icon:'🔫', slot:'light'},
+  Desert: {dmg:55, rof:400,  ammo:7,  res:28,  spread:.025, name:'Desert Eagle',   icon:'🔫', slot:'light'},
+  Revolver:{dmg:70,rof:600,  ammo:6,  res:18,  spread:.018, name:'Revolver',       icon:'🔫', slot:'light'},
+  Knife:  {dmg:45, rof:400,  ammo:1,  res:999, spread:.000, name:'Knife',          icon:'🗡️', slot:'melee'},
 };
 
 // ─── MAP ─────────────────────────────────────────────────────────────────────
@@ -973,6 +1198,37 @@ function loadEnemyModel(onDone){
     .catch(err=>{console.warn('⚠️ ga.glb not found:',err.message);onDone();});
 }
 
+// Fix hair rendering on a loaded GLB scene — call after parse
+function _fixHair(mdl){
+  // Keywords that identify hair meshes in most GLB files
+  const hairKW=['hair','Hair','HAIR','fur','Fur','strand','Strand'];
+  const faceKW=['face','Face','head','Head','skin','Skin'];
+  mdl.traverse(c=>{
+    if(!c.isMesh)return;
+    const nm=(c.name||'').toLowerCase();
+    const isHair=hairKW.some(k=>c.name.includes(k));
+    const isFace=faceKW.some(k=>c.name.includes(k));
+    if(isHair){
+      // Render hair on top with no z-fighting; push it slightly back
+      if(c.material){
+        c.material=c.material.clone();
+        c.material.depthWrite=true;
+        c.material.side=T.FrontSide;
+        c.material.alphaTest=0.35;   // cut off transparent edges
+        c.material.transparent=true;
+        c.renderOrder=2;             // render after face
+      }
+      // Move hair backward (away from face) slightly
+      c.position.z-=0.01;
+      c.position.y+=0.005;
+      console.log('💇 Hair fixed:',c.name);
+    }
+    if(isFace){
+      c.renderOrder=1;
+    }
+  });
+}
+
 // ─── PLAYER GLB LOADER (Bro.glb) ─────────────────────────────────────────────
 function loadPlayerModel(onDone){
   const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
@@ -1017,72 +1273,106 @@ function _attachPlayerGLB(gltf){
   playerMesh.add(mdl);
   playerGLBModel=mdl;
 
-  if(!playerGLBClips||playerGLBClips.length===0){return;}
-
-  // Log available clips so you can see names in console
-  console.log('🎭 Bro.glb animation clips:', playerGLBClips.map((c,i)=>i+':'+c.name));
-
-  // Setup mixer
-  playerGLBMixer=new T.AnimationMixer(mdl);
-  playerGLBMixer._currentState=null;
-  playerGLBMixer._actions={};  // cache: stateName -> AnimationAction
-
-  // Helper: find clip by trying multiple name variants
-  function findClip(names){
-    for(const n of names){
-      const c=T.AnimationClip.findByName(playerGLBClips,n);
-      if(c)return c;
-    }
-    return null;
+  if(!playerGLBClips||playerGLBClips.length===0){
+    // No clips — just set up mixer, procedural fallback will run
+    playerGLBMixer=new T.AnimationMixer(mdl);
+    playerGLBMixer._currentState=null;
+    playerGLBMixer._actions={};
+    console.warn('⚠️ Bro.glb has NO animation clips — using procedural fallback');
+    return;
   }
 
-  // Map state names → clip search order
-  const clipMap={
-    idle : findClip(['Idle','idle','Stand','stand','TPose','Armature|Idle','mixamo.com|Layer0']) || playerGLBClips[0],
-    walk : findClip(['Walk','walk','Walking','Run','run','WalkForward','Armature|Walk'])        || playerGLBClips[Math.min(1,playerGLBClips.length-1)],
-    shoot: findClip(['Shoot','shoot','Fire','fire','Attack','attack','Rifle_Aiming_Idle','Armature|Shoot']) || playerGLBClips[0],
-    jump : findClip(['Jump','jump','Jumping','JumpUp','Armature|Jump'])                         || playerGLBClips[0],
-  };
+  // Log available clips
+  console.log('🎭 Bro.glb clips:', playerGLBClips.map((c,i)=>i+': "'+c.name+'"').join(', '));
 
-  // Pre-create all actions and set them up
+  // Build mixer
+  playerGLBMixer=new T.AnimationMixer(mdl);
+  playerGLBMixer._currentState=null;
+  playerGLBMixer._actions={};
+
+  // Find a clip by trying several name variants
+  function findClip(names){
+    for(const n of names){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c)return c;}
+    return null;
+  }
+  // Also try contains-match as a last resort
+  function findClipContains(keyword){
+    const kl=keyword.toLowerCase();
+    return playerGLBClips.find(c=>c.name.toLowerCase().includes(kl))||null;
+  }
+
+  // Map each game-state to the best matching clip
+  const idleClip = findClip(['Idle','idle','Stand','stand','Armature|Idle','mixamo.com|Layer0'])
+                || findClipContains('idle') || findClipContains('stand') || playerGLBClips[0];
+  const walkClip = findClip(['Walk','walk','Walking','Run','run','WalkForward','Armature|Walk'])
+                || findClipContains('walk') || findClipContains('run')
+                || playerGLBClips[Math.min(1,playerGLBClips.length-1)];
+  const shootClip= findClip(['Shoot','shoot','Fire','fire','Attack','attack','Rifle_Aiming_Idle','Firing','Armature|Shoot'])
+                || findClipContains('shoot') || findClipContains('fire') || findClipContains('attack') || idleClip;
+  const jumpClip = findClip(['Jump','jump','Jumping','JumpUp','Armature|Jump'])
+                || findClipContains('jump') || walkClip;
+
+  const clipMap={idle:idleClip, walk:walkClip, shoot:shootClip, jump:jumpClip};
+  console.log('🎮 Player anim map — idle:"'+idleClip?.name+'" walk:"'+walkClip?.name+'" shoot:"'+shootClip?.name+'" jump:"'+jumpClip?.name+'"');
+
+  // Create & prime all actions at weight 0
+  const seen=new Set();
   Object.entries(clipMap).forEach(([state,clip])=>{
     if(!clip)return;
     const action=playerGLBMixer.clipAction(clip);
     action.enabled=true;
     action.setEffectiveWeight(0);
+    action.setEffectiveTimeScale(1);
     if(state==='jump'){action.setLoop(T.LoopOnce,1);action.clampWhenFinished=true;}
     else action.setLoop(T.LoopRepeat,Infinity);
-    action.play(); // prime all actions (weight=0 means invisible)
+    if(!seen.has(clip.name)){action.play();seen.add(clip.name);}
     playerGLBMixer._actions[state]=action;
   });
 
-  // Start in idle
+  // Kick off idle immediately
   _setPlayerGLBAnim('idle',0);
 }
 
 // Crossfade player GLB to a new animation state
 function _setPlayerGLBAnim(state, fadeDur){
-  if(!playerGLBMixer)return;
+  if(!playerGLBMixer||!playerGLBMixer._actions)return;
   if(state===playerGLBMixer._currentState)return;
-  const fadeDuration=(fadeDur===undefined)?0.18:fadeDur;
+  const fadeDuration=(fadeDur===undefined)?0.15:fadeDur;
   const prev=playerGLBMixer._currentState;
   const prevAction=prev?playerGLBMixer._actions[prev]:null;
   const nextAction=playerGLBMixer._actions[state];
   if(!nextAction)return;
 
+  // If both states share the same underlying clip, just record state change
+  if(prevAction&&prevAction===nextAction){
+    playerGLBMixer._currentState=state;
+    return;
+  }
+
   playerGLBMixer._currentState=state;
 
-  if(prevAction&&prevAction!==nextAction){
+  if(prevAction){
     prevAction.fadeOut(fadeDuration);
   }
-  nextAction.reset();
-  nextAction.setEffectiveWeight(1);
-  nextAction.fadeIn(fadeDuration);
+  // Ensure the next action is actually running and fades in
+  nextAction.enabled=true;
+  nextAction.setEffectiveTimeScale(1);
   if(state==='jump'){
     nextAction.setLoop(T.LoopOnce,1);
     nextAction.clampWhenFinished=true;
   } else {
     nextAction.setLoop(T.LoopRepeat,Infinity);
+  }
+  if(fadeDuration===0){
+    // Instant switch — stop all others, play this one at full weight
+    if(prevAction)prevAction.stop();
+    nextAction.reset();
+    nextAction.setEffectiveWeight(1);
+    nextAction.play();
+  } else {
+    nextAction.reset();
+    nextAction.setEffectiveWeight(1);
+    nextAction.fadeIn(fadeDuration);
   }
 }
 
@@ -1128,6 +1418,8 @@ function spawnBotWithGLB(botObj){
     mdl.traverse(c=>{
       if(c.isMesh){c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;if(c.material)c.material.side=T.FrontSide;}
     });
+    // Fix hair z-fighting / glaze
+    _fixHair(mdl);
     // Scale
     const box=new T.Box3().setFromObject(mdl);
     const sz=box.getSize(new T.Vector3());
@@ -1331,6 +1623,7 @@ async function _startEngine(lobbyData){
       updateHUD();
       startTimer();
       setupControls();
+      _attachInvListeners();
       // Reset camera button label
       const cb=document.getElementById('camBtn');
       if(cb){cb.textContent='👁 3RD';cb.className='tp';}
@@ -1343,6 +1636,7 @@ async function _startEngine(lobbyData){
           movePlayer(dt);
           moveBots(dt);
           tickGrens(dt);
+          tickParticles(dt);
           updateMM();
           if(!G.isPractice&&CUR_USER)pushMyPos(now);
           syncRemotePlayers();
@@ -1717,27 +2011,135 @@ function buildPlayerMesh(){
 }
 
 function buildGun(){
+  // Remove old gun from camera
+  if(gunGroup){camera.remove(gunGroup);gunGroup=null;muzzleFlash=null;muzzleLight=null;}
+  const wk=G.primaryWeapon||'AR';
   const g=new T.Group();
-  const d=new T.MeshLambertMaterial({color:0x0d0d0d});
-  const m=new T.MeshLambertMaterial({color:0x1a1a1a});
-  const t=new T.MeshLambertMaterial({color:0x7a5c3a});
-  const gr=new T.MeshLambertMaterial({color:0x100f08});
-  const rec=new T.Mesh(new T.BoxGeometry(.065,.092,.42),d);g.add(rec);
-  const brl=new T.Mesh(new T.CylinderGeometry(.016,.016,.46,8),m);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.44);g.add(brl);
-  const mz=new T.Mesh(new T.CylinderGeometry(.022,.018,.07,8),m);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-.68);g.add(mz);
-  const hg=new T.Mesh(new T.BoxGeometry(.055,.055,.3),m);hg.position.set(0,.01,-.3);g.add(hg);
-  const rl=new T.Mesh(new T.BoxGeometry(.075,.012,.25),m);rl.position.set(0,.048,-.28);g.add(rl);
-  const grp=new T.Mesh(new T.BoxGeometry(.042,.14,.062),gr);grp.position.set(0,-.1,.05);grp.rotation.x=.25;g.add(grp);
-  const mag=new T.Mesh(new T.BoxGeometry(.036,.14,.042),d);mag.position.set(0,-.098,-.04);g.add(mag);
-  const stk=new T.Mesh(new T.BoxGeometry(.052,.076,.19),t);stk.position.set(0,-.01,.26);g.add(stk);
-  const bt=new T.Mesh(new T.BoxGeometry(.056,.092,.026),m);bt.position.set(0,-.005,.355);g.add(bt);
-  const scp=new T.Mesh(new T.CylinderGeometry(.018,.018,.12,8),m);scp.rotation.x=Math.PI/2;scp.position.set(0,.065,-.08);g.add(scp);
-  const fg=new T.Mesh(new T.CylinderGeometry(.018,.02,.1,7),gr);fg.rotation.x=Math.PI/2;fg.position.set(0,-.038,-.32);g.add(fg);
+  const blk=new T.MeshLambertMaterial({color:0x0d0d0d});
+  const dk =new T.MeshLambertMaterial({color:0x1a1a1a});
+  const tan=new T.MeshLambertMaterial({color:0x7a5c3a});
+  const grp=new T.MeshLambertMaterial({color:0x100f08});
+  const slv=new T.MeshLambertMaterial({color:0x888888});
+
+  if(wk==='Sniper'){
+    // Long bolt-action sniper
+    const rec=new T.Mesh(new T.BoxGeometry(.055,.075,.65),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.012,.012,.72,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.7);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.018,.014,.06,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-1.06);g.add(mz);
+    const stk=new T.Mesh(new T.BoxGeometry(.048,.09,.36),tan);stk.position.set(0,-.02,.34);g.add(stk);
+    const grip=new T.Mesh(new T.BoxGeometry(.038,.13,.058),grp);grip.position.set(0,-.1,.06);grip.rotation.x=.22;g.add(grip);
+    // Big scope
+    const scp=new T.Mesh(new T.CylinderGeometry(.025,.025,.24,8),dk);scp.rotation.x=Math.PI/2;scp.position.set(0,.075,.02);g.add(scp);
+    const scpL=new T.Mesh(new T.CylinderGeometry(.018,.018,.04,8),slv);scpL.rotation.x=Math.PI/2;scpL.position.set(0,.075,-.12);g.add(scpL);
+    const bpd=new T.Mesh(new T.BoxGeometry(.014,.08,.24),tan);bpd.position.set(0,-.01,-.28);bpd.rotation.x=.08;g.add(bpd);// bipod
+    g.position.set(.17,-.19,-.52);g.rotation.y=.03;
+  } else if(wk==='Shotgun'){
+    // Wide pump shotgun
+    const rec=new T.Mesh(new T.BoxGeometry(.072,.1,.40),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.022,.022,.38,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.012,-.44);g.add(brl);
+    const brl2=new T.Mesh(new T.CylinderGeometry(.022,.022,.38,8),dk);brl2.rotation.x=Math.PI/2;brl2.position.set(0,-.015,-.44);g.add(brl2);
+    const pump=new T.Mesh(new T.BoxGeometry(.062,.052,.14),tan);pump.position.set(0,.01,-.28);g.add(pump);
+    const stk=new T.Mesh(new T.BoxGeometry(.055,.088,.22),tan);stk.position.set(0,-.01,.28);g.add(stk);
+    const grip=new T.Mesh(new T.BoxGeometry(.04,.13,.058),grp);grip.position.set(0,-.105,.04);grip.rotation.x=.2;g.add(grip);
+    g.position.set(.20,-.20,-.36);g.rotation.y=.04;
+  } else if(wk==='SMG'){
+    // Short compact SMG
+    const rec=new T.Mesh(new T.BoxGeometry(.058,.082,.30),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.013,.013,.26,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.30);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.018,.014,.05,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-.44);g.add(mz);
+    const grip=new T.Mesh(new T.BoxGeometry(.038,.12,.05),grp);grip.position.set(0,-.1,.04);grip.rotation.x=.22;g.add(grip);
+    const mag=new T.Mesh(new T.BoxGeometry(.032,.16,.038),blk);mag.position.set(0,-.105,-.02);g.add(mag);
+    const stk=new T.Mesh(new T.BoxGeometry(.04,.06,.10),dk);stk.position.set(0,-.01,.2);g.add(stk);
+    const fgrip=new T.Mesh(new T.BoxGeometry(.034,.085,.04),tan);fgrip.position.set(0,-.06,-.14);g.add(fgrip);
+    g.position.set(.18,-.20,-.32);g.rotation.y=.04;
+  } else if(wk==='LMG'){
+    // Heavy LMG with drum mag
+    const rec=new T.Mesh(new T.BoxGeometry(.075,.1,.50),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.018,.018,.55,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.012,-.56);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.024,.020,.07,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.012,-.84);g.add(mz);
+    const drum=new T.Mesh(new T.CylinderGeometry(.08,.08,.045,10),blk);drum.rotation.x=Math.PI/2;drum.position.set(0,-.08,-.01);g.add(drum);
+    const stk=new T.Mesh(new T.BoxGeometry(.055,.08,.20),tan);stk.position.set(0,-.015,.36);g.add(stk);
+    const grip=new T.Mesh(new T.BoxGeometry(.04,.14,.062),grp);grip.position.set(0,-.1,.06);grip.rotation.x=.2;g.add(grip);
+    const bipL=new T.Mesh(new T.BoxGeometry(.006,.12,.006),dk);bipL.position.set(-.06,-.11,-.4);g.add(bipL);
+    const bipR=new T.Mesh(new T.BoxGeometry(.006,.12,.006),dk);bipR.position.set(.06,-.11,-.4);g.add(bipR);
+    g.position.set(.20,-.22,-.48);g.rotation.y=.04;
+  } else if(wk==='Carbine'){
+    // Mid-length carbine
+    const rec=new T.Mesh(new T.BoxGeometry(.062,.088,.38),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.014,.014,.38,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.40);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.02,.016,.06,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-.60);g.add(mz);
+    const grip=new T.Mesh(new T.BoxGeometry(.04,.13,.058),grp);grip.position.set(0,-.1,.05);grip.rotation.x=.22;g.add(grip);
+    const mag=new T.Mesh(new T.BoxGeometry(.034,.13,.04),blk);mag.position.set(0,-.098,-.03);g.add(mag);
+    const stk=new T.Mesh(new T.BoxGeometry(.05,.072,.16),tan);stk.position.set(0,-.01,.24);g.add(stk);
+    const scp=new T.Mesh(new T.CylinderGeometry(.016,.016,.1,8),dk);scp.rotation.x=Math.PI/2;scp.position.set(0,.058,-.06);g.add(scp);
+    g.position.set(.19,-.21,-.40);g.rotation.y=.04;
+  } else if(wk==='Pistol'){
+    // Compact pistol
+    const rec=new T.Mesh(new T.BoxGeometry(.048,.072,.22),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.011,.011,.18,7),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.008,-.22);g.add(brl);
+    const grip=new T.Mesh(new T.BoxGeometry(.036,.13,.05),tan);grip.position.set(0,-.1,.03);grip.rotation.x=.15;g.add(grip);
+    const mag=new T.Mesh(new T.BoxGeometry(.030,.11,.034),blk);mag.position.set(0,-.1,.02);g.add(mag);
+    const tr=new T.Mesh(new T.BoxGeometry(.05,.012,.12),dk);tr.position.set(0,.038,-.08);g.add(tr);
+    g.position.set(.18,-.20,-.28);g.rotation.y=.04;
+  } else if(wk==='Desert'){
+    // Large Desert Eagle
+    const rec=new T.Mesh(new T.BoxGeometry(.055,.09,.28),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.014,.014,.22,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.28);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.02,.016,.04,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-.40);g.add(mz);
+    const grip=new T.Mesh(new T.BoxGeometry(.042,.145,.058),tan);grip.position.set(0,-.11,.04);grip.rotation.x=.18;g.add(grip);
+    const mag=new T.Mesh(new T.BoxGeometry(.036,.12,.04),blk);mag.position.set(0,-.11,.03);g.add(mag);
+    const slde=new T.Mesh(new T.BoxGeometry(.06,.04,.26),slv);slde.position.set(0,.048,-.08);g.add(slde);
+    g.position.set(.19,-.21,-.32);g.rotation.y=.04;
+  } else if(wk==='Revolver'){
+    // Revolver with cylinder
+    const rec=new T.Mesh(new T.BoxGeometry(.05,.085,.26),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.013,.013,.26,8),slv);brl.rotation.x=Math.PI/2;brl.position.set(0,.018,-.28);g.add(brl);
+    const cyl=new T.Mesh(new T.CylinderGeometry(.042,.042,.055,6),slv);cyl.rotation.x=Math.PI/2;cyl.position.set(0,.005,-.04);g.add(cyl);
+    // Cylinder chambers
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const ch=new T.Mesh(new T.CylinderGeometry(.008,.008,.058,6),dk);ch.rotation.x=Math.PI/2;ch.position.set(Math.cos(a)*.028,.005+Math.sin(a)*.028,-.04);g.add(ch);}
+    const grip=new T.Mesh(new T.BoxGeometry(.038,.13,.052),tan);grip.position.set(0,-.105,.06);grip.rotation.x=.28;g.add(grip);
+    g.position.set(.18,-.20,-.30);g.rotation.y=.04;
+  } else if(wk==='Knife'){
+    // Knife / melee
+    const blade=new T.Mesh(new T.BoxGeometry(.014,.008,.32),slv);blade.position.set(0,0,-.18);g.add(blade);
+    const tip=new T.Mesh(new T.ConeGeometry(.01,.06,4),slv);tip.rotation.x=Math.PI/2;tip.position.set(0,0,-.36);g.add(tip);
+    const hndl=new T.Mesh(new T.BoxGeometry(.028,.028,.12),tan);hndl.position.set(0,0,.04);g.add(hndl);
+    const grd=new T.Mesh(new T.BoxGeometry(.055,.014,.014),dk);grd.position.set(0,0,-.04);g.add(grd);
+    g.position.set(.17,-.18,-.28);g.rotation.y=.04;
+  } else {
+    // Default AR — original model
+    const rec=new T.Mesh(new T.BoxGeometry(.065,.092,.42),blk);g.add(rec);
+    const brl=new T.Mesh(new T.CylinderGeometry(.016,.016,.46,8),dk);brl.rotation.x=Math.PI/2;brl.position.set(0,.01,-.44);g.add(brl);
+    const mz=new T.Mesh(new T.CylinderGeometry(.022,.018,.07,8),dk);mz.rotation.x=Math.PI/2;mz.position.set(0,.01,-.68);g.add(mz);
+    const hg=new T.Mesh(new T.BoxGeometry(.055,.055,.3),dk);hg.position.set(0,.01,-.3);g.add(hg);
+    const rl=new T.Mesh(new T.BoxGeometry(.075,.012,.25),dk);rl.position.set(0,.048,-.28);g.add(rl);
+    const grip2=new T.Mesh(new T.BoxGeometry(.042,.14,.062),grp);grip2.position.set(0,-.1,.05);grip2.rotation.x=.25;g.add(grip2);
+    const mag=new T.Mesh(new T.BoxGeometry(.036,.14,.042),blk);mag.position.set(0,-.098,-.04);g.add(mag);
+    const stk=new T.Mesh(new T.BoxGeometry(.052,.076,.19),tan);stk.position.set(0,-.01,.26);g.add(stk);
+    const bt=new T.Mesh(new T.BoxGeometry(.056,.092,.026),dk);bt.position.set(0,-.005,.355);g.add(bt);
+    const scp=new T.Mesh(new T.CylinderGeometry(.018,.018,.12,8),dk);scp.rotation.x=Math.PI/2;scp.position.set(0,.065,-.08);g.add(scp);
+    const fg=new T.Mesh(new T.CylinderGeometry(.018,.02,.1,7),grp);fg.rotation.x=Math.PI/2;fg.position.set(0,-.038,-.32);g.add(fg);
+    g.position.set(.19,-.21,-.42);g.rotation.y=.04;
+  }
+
+  // Muzzle flash + light (added to all guns)
+  const mzPos=(wk==='Knife')?new T.Vector3(0,0,-.38):
+              (wk==='Pistol')?new T.Vector3(0,.008,-.42):
+              (wk==='Revolver')?new T.Vector3(0,.018,-.56):
+              (wk==='Sniper')?new T.Vector3(0,.01,-1.14):
+              (wk==='Shotgun')?new T.Vector3(0,.01,-.68):
+              (wk==='SMG')?new T.Vector3(0,.01,-.52):
+              (wk==='LMG')?new T.Vector3(0,.012,-.92):
+              (wk==='Carbine')?new T.Vector3(0,.01,-.70):
+              (wk==='Desert')?new T.Vector3(0,.01,-.46):
+              new T.Vector3(0,.01,-.82);
   muzzleFlash=new T.Mesh(new T.ConeGeometry(.09,.24,8),new T.MeshBasicMaterial({color:0xffbb00,transparent:true,opacity:0,depthTest:false}));
-  muzzleFlash.rotation.x=Math.PI/2;muzzleFlash.position.set(0,.01,-.82);g.add(muzzleFlash);
-  muzzleLight=new T.PointLight(0xff8800,0,4);muzzleLight.position.set(0,.01,-.82);g.add(muzzleLight);
-  g.position.set(.19,-.21,-.42);g.rotation.y=.04;
-  gunGroup=g;camera.add(gunGroup);scene.add(camera);
+  muzzleFlash.rotation.x=Math.PI/2;muzzleFlash.position.copy(mzPos);g.add(muzzleFlash);
+  muzzleLight=new T.PointLight(0xff8800,0,4);muzzleLight.position.copy(mzPos);g.add(muzzleLight);
+
+  gunGroup=g;
+  camera.add(gunGroup);
+  if(!scene.children.includes(camera))scene.add(camera);
 }
 
 // ─── BOTS ────────────────────────────────────────────────────────────────────
@@ -2122,6 +2524,11 @@ function fireOnce(){
   if(bestBot){
     const dmg=wd.dmg*(G.isAiming?1.22:1);
     bestBot.health-=dmg;showDmgNum(Math.floor(dmg));
+    // Blood/flesh particles at hit point
+    const hx=bestBot.mesh.position.x;
+    const hz=bestBot.mesh.position.z;
+    const hy=bestBot.mesh.position.y+0.9;
+    spawnImpactParticles(hx,hy,hz,'flesh');
     // Flash red
     bestBot.mesh.traverse(n=>{
       if(n.isMesh&&n.material&&n.name!=='hbBg'&&n.name!=='hbFg'){
@@ -2153,8 +2560,109 @@ function fireOnce(){
   });
 
   if(G.ammo===0)setTimeout(doReload,200);
+
+  // ── Wall / ground impact particles when no enemy hit ─────────────────────
+  if(!bestBot&&Object.keys(onlinePlayers).length===0||!bestBot){
+    // Step along the ray until we hit a wall or ground
+    const MAX_DIST=60, STEP=0.5;
+    let hit=false;
+    for(let s=2;s<MAX_DIST;s+=STEP){
+      const rx=ox+ndx*s, ry=oy+ndy*s, rz=oz+ndz*s;
+      // Hit ground
+      if(ry<=0.05){
+        spawnImpactParticles(rx,0.05,rz,'ground');
+        hit=true;break;
+      }
+      // Hit wall/building
+      if(isWall(rx,rz)){
+        spawnImpactParticles(rx,Math.max(0.1,ry),rz,'wall');
+        hit=true;break;
+      }
+    }
+    // Fallback: always spawn ground impact if ray goes very far
+    if(!hit){
+      const rx=ox+ndx*30, rz=oz+ndz*30;
+      spawnImpactParticles(rx,0.05,rz,'ground');
+    }
+  }
+} // end fireOnce
+
+// ─── BULLET IMPACT PARTICLES ─────────────────────────────────────────────────
+let _particles=[];  // active particle groups
+
+function spawnImpactParticles(x,y,z,type){
+  // type: 'wall' = grey dust, 'flesh' = red blood, 'ground' = dirt
+  if(!scene||!T)return;
+  const colors={wall:[0xccbb99,0xaaa080],flesh:[0xff2020,0xdd1010],ground:[0x886644,0x6a4a22]};
+  const cols=colors[type]||colors.wall;
+  const count=(type==='flesh')?8:6;
+  const g=new T.Group();
+  g.position.set(x,y,z);
+
+  for(let i=0;i<count;i++){
+    const col=cols[Math.floor(Math.random()*cols.length)];
+    const sz=0.04+Math.random()*0.06;
+    const mat=new T.MeshBasicMaterial({color:col,transparent:true,opacity:0.9,depthWrite:false});
+    const mesh=new T.Mesh(new T.BoxGeometry(sz,sz,sz),mat);
+    // Random velocity burst
+    mesh._vx=(Math.random()-.5)*4.5;
+    mesh._vy= Math.random()*3.5+1.0;
+    mesh._vz=(Math.random()-.5)*4.5;
+    mesh._life=1.0;
+    g.add(mesh);
+  }
+
+  // Flash decal: small flat circle on impact point
+  const decalMat=new T.MeshBasicMaterial({color:type==='flesh'?0xff4444:0xffcc44,transparent:true,opacity:0.8,depthWrite:false,side:T.DoubleSide});
+  const decal=new T.Mesh(new T.CircleGeometry(0.06,8),decalMat);
+  decal.rotation.x=-Math.PI/2;
+  decal.position.y=0.01;
+  decal._isDecal=true;
+  decal._life=1.0;
+  g.add(decal);
+
+  // Smoke puff
+  const smokeMat=new T.MeshBasicMaterial({color:0xcccccc,transparent:true,opacity:0.35,depthWrite:false});
+  const smoke=new T.Mesh(new T.SphereGeometry(0.12,5,4),smokeMat);
+  smoke._vy=0.8;smoke._life=1.0;smoke._isSmoke=true;
+  g.add(smoke);
+
+  scene.add(g);
+  _particles.push({group:g,life:1.0,type});
 }
 
+function tickParticles(dt){
+  _particles=_particles.filter(p=>{
+    p.life-=dt*2.5;
+    if(p.life<=0){scene.remove(p.group);return false;}
+    p.group.children.forEach(mesh=>{
+      if(mesh._isDecal){
+        mesh._life-=dt*3;
+        mesh.material.opacity=Math.max(0,mesh._life*0.7);
+        return;
+      }
+      if(mesh._isSmoke){
+        mesh._life-=dt*1.8;
+        mesh.position.y+=mesh._vy*dt;
+        mesh.scale.setScalar(1+(1-mesh._life)*2);
+        mesh.material.opacity=Math.max(0,mesh._life*0.3);
+        return;
+      }
+      // Regular debris particle
+      mesh._vy-=18*dt; // gravity
+      mesh.position.x+=mesh._vx*dt;
+      mesh.position.y+=mesh._vy*dt;
+      mesh.position.z+=mesh._vz*dt;
+      mesh._life-=dt*2;
+      mesh.material.opacity=Math.max(0,mesh._life*0.85);
+      mesh.rotation.x+=dt*5;mesh.rotation.z+=dt*3;
+      // Bounce off ground
+      const gy=p.group.position.y;
+      if(mesh.position.y+gy<0.05){mesh.position.y=0.05-gy;mesh._vy*=-0.3;mesh._vx*=0.6;mesh._vz*=0.6;}
+    });
+    return true;
+  });
+}
 function doReload(){
   if(G.isReloading||G.ammoReserve<=0)return;
   const w=WD[G.primaryWeapon];if(!w||G.ammo>=w.ammo)return;
