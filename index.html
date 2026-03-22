@@ -1179,127 +1179,141 @@ let _glbClock=null;
 
 // ─── OCEAN ────────────────────────────────────────────────────────────────────
 let _oceanMesh=null, _oceanUniforms=null;
-const OCEAN_MARGIN=28;
+const OCEAN_MARGIN=160; // extends well past fog so ocean looks infinite
 const isMobile=/Mobi|Android/i.test(navigator.userAgent);
 
 function _buildOcean(){
-  const W=MS*CS;
+  const W=MS*CS;           // e.g. 112 — exact world boundary
   const OW=W+OCEAN_MARGIN*2;
+
   _oceanUniforms={
-    time:{value:0},
-    waterColor:{value:new T.Color(0x0077bb)},
-    deepColor:{value:new T.Color(0x003366)},
-    waveHeight:{value:0.36},
-    waveFreq:{value:0.52},
-    waveSpeed:{value:0.85},
-    fogNear:{value:28},
-    fogFar:{value:90},
+    time:       {value:0},
+    waterColor: {value:new T.Color(0x0077bb)},
+    deepColor:  {value:new T.Color(0x003366)},
+    skyColor:   {value:new T.Color(0x8ab4d8)},
+    waveH:      {value:0.30},
+    waveF:      {value:0.40},
+    waveS:      {value:0.70},
+    worldSize:  {value:W},           // exact world boundary in world units
+    meshOffset: {value:new T.Vector2(W/2,W/2)}, // ocean mesh world-space offset
+    fogNear:    {value:35.0},
+    fogFar:     {value:110.0},
   };
+
+  // Key fix: vertex shader converts local → world XZ, then checks if the vertex
+  // is inside the map boundary. If inside → wave = 0 (flat, hidden by ground).
+  // If outside → full waves. Smooth transition over ~3 units at the shore.
   const vert=`
-    uniform float time,waveHeight,waveFreq,waveSpeed;
-    varying float vW; varying vec2 vUv;
+    uniform float time,waveH,waveF,waveS,worldSize;
+    uniform vec2  meshOffset;
+    varying float vW;
+    varying vec2  vUv;
+    varying float vDist;
     void main(){
-      vUv=uv; vec3 p=position;
-      float w=sin(p.x*waveFreq+time*waveSpeed)*waveHeight
-             +sin(p.z*waveFreq*1.3+time*waveSpeed*1.1+2.0)*waveHeight*0.5
-             +sin((p.x-p.z)*waveFreq*0.5+time*waveSpeed*0.8)*waveHeight*0.3;
-      p.y+=w; vW=w/waveHeight*0.5+0.5;
-      gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);
+      vUv=uv;
+      vec3 p=position;
+
+      // Convert local XZ → world XZ
+      // The mesh is centred at (worldSize/2, 0, worldSize/2) in world space
+      // local p.x goes -OW/2 .. +OW/2, so worldX = p.x + meshOffset.x
+      float wx = p.x + meshOffset.x;
+      float wz = p.z + meshOffset.y;  // meshOffset.y is actually the Z offset
+
+      // How far OUTSIDE the world boundary is this vertex?
+      // Inside boundary → dist < 0; outside → dist > 0
+      float dLeft   = -wx;               // positive when wx<0
+      float dRight  = wx - worldSize;    // positive when wx>worldSize
+      float dTop    = -wz;               // positive when wz<0
+      float dBottom = wz - worldSize;    // positive when wz>worldSize
+
+      // outsideDist = how many units outside the boundary we are
+      float outsideDist = max(max(dLeft,dRight), max(dTop,dBottom));
+
+      // Smoothstep: 0 at boundary, 1 at 6 units outside
+      // This gives a clean shore line — waves start exactly at the world edge
+      float waveMask = smoothstep(0.0, 6.0, outsideDist);
+
+      // 3-layer waves
+      float w = sin(wx*waveF         + time*waveS        )*waveH
+              + sin(wz*waveF*1.35    + time*waveS*1.18+2.1)*waveH*0.5
+              + sin((wx-wz)*waveF*0.55 + time*waveS*0.8  )*waveH*0.3;
+      w *= waveMask;   // zero inside map, full outside
+
+      p.y += w;
+      vW   = w/(waveH*1.8)+0.5;
+
+      vec4 mvPos=modelViewMatrix*vec4(p,1.0);
+      vDist=-mvPos.z;
+      gl_Position=projectionMatrix*mvPos;
     }`;
+
   const frag=`
-    uniform vec3 waterColor,deepColor; uniform float fogNear,fogFar;
-    varying float vW; varying vec2 vUv;
+    uniform vec3  waterColor,deepColor,skyColor;
+    uniform float fogNear,fogFar;
+    varying float vW,vDist;
+    varying vec2  vUv;
     void main(){
-      vec3 col=mix(deepColor,waterColor,vW*0.8+0.2);
-      float foam=smoothstep(0.70,0.86,vW);
-      col=mix(col,vec3(0.88,0.96,1.0),foam*0.5);
-      float edge=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y));
-      col=mix(deepColor,col,smoothstep(0.0,0.1,edge));
-      float depth=gl_FragCoord.z/gl_FragCoord.w;
-      float ff=smoothstep(fogNear,fogFar,depth);
-      col=mix(col,vec3(0.54,0.71,0.85),ff*0.65);
-      gl_FragColor=vec4(col,0.9);
+      vec3 col=mix(deepColor,waterColor,clamp(vW*1.3,0.0,1.0));
+      float foam=smoothstep(0.66,0.82,vW);
+      col=mix(col,vec3(0.88,0.96,1.0),foam*0.42);
+      float shim=abs(sin(vUv.x*90.0+vUv.y*70.0))*0.032*vW;
+      col+=shim;
+      // Horizon fog — blend ocean into sky
+      float fogT=clamp((vDist-fogNear)/(fogFar-fogNear),0.0,1.0);
+      fogT=fogT*fogT;
+      col=mix(col,skyColor,fogT);
+      gl_FragColor=vec4(col,1.0);
     }`;
-  const segs=isMobile?28:48;
+
+  const segs=isMobile?36:60;
   const geo=new T.PlaneGeometry(OW,OW,segs,segs);
   geo.rotateX(-Math.PI/2);
+
   _oceanMesh=new T.Mesh(geo,new T.ShaderMaterial({
-    uniforms:_oceanUniforms,vertexShader:vert,fragmentShader:frag,
-    transparent:true,side:T.DoubleSide
+    uniforms:     _oceanUniforms,
+    vertexShader: vert,
+    fragmentShader:frag,
+    transparent:  false,
+    depthWrite:   true,
+    depthTest:    true,
+    side:         T.FrontSide,
   }));
-  _oceanMesh.position.set(W/2,-0.5,W/2);
+
+  // Centre on map. renderOrder=-1 so ground geometry draws over the flat inner part.
+  _oceanMesh.position.set(W/2, 0.0, W/2);
+  _oceanMesh.renderOrder=-1;
   _oceanMesh.frustumCulled=false;
   scene.add(_oceanMesh);
-  // Thin ground-to-ocean border
-  const bm=new T.MeshLambertMaterial({color:0x1a2a18});
-  [[W/2,-1,W/2,W+4,1.2,2],[W/2,W+1,W/2,W+4,1.2,2],[-1,W/2,W/2,2,1.2,W],[W+1,W/2,W/2,2,1.2,W]]
-    .forEach(([x,z,y,w,h,d])=>{
-      const m=new T.Mesh(new T.BoxGeometry(w,h,d),bm);
-      m.position.set(x,0.1,z);scene.add(m);
-    });
 }
 
 function tickOcean(now){
-  if(_oceanUniforms)_oceanUniforms.time.value=now*0.001;
-}
-
-// ─── MOUNTAINS ────────────────────────────────────────────────────────────────
-function _buildMountains(){
-  const W=MS*CS;
-  const href=window.location.href.split('?')[0].split('#')[0];
-  const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
-  const loader=new T.TextureLoader();
-  loader.load(base+'mountain.jpg',tex=>{
-    tex.wrapS=T.RepeatWrapping; tex.repeat.set(3,1);
-    const mat=new T.MeshBasicMaterial({map:tex,side:T.DoubleSide,fog:false,transparent:false});
-    const mH=24, mW=W+OCEAN_MARGIN*2+12;
-    const pd=OCEAN_MARGIN+4;
-    [
-      {x:W/2,    z:-pd,      ry:0},
-      {x:W/2,    z:W+pd,     ry:Math.PI},
-      {x:-pd,    z:W/2,      ry:Math.PI/2},
-      {x:W+pd,   z:W/2,      ry:-Math.PI/2},
-    ].forEach(s=>{
-      const m=new T.Mesh(new T.PlaneGeometry(mW,mH),mat);
-      m.position.set(s.x,mH/2-2,s.z);
-      m.rotation.y=s.ry;m.frustumCulled=false;
-      scene.add(m);
-    });
-  },undefined,()=>_buildProceduralMountains(W));
-}
-
-function _buildProceduralMountains(W){
-  const mat=new T.MeshLambertMaterial({color:0x4a6040});
-  const pd=OCEAN_MARGIN+W/2-4;
-  [0,1,2,3].forEach(side=>{
-    for(let i=0;i<9;i++){
-      const h=12+Math.random()*14, w2=7+Math.random()*9;
-      const geo=new T.ConeGeometry(w2,h,5);
-      const mesh=new T.Mesh(geo,mat);
-      const t=(i/8-0.5)*(W+OCEAN_MARGIN*1.4);
-      const positions=[[W/2+t,-2+h/2,-pd+W/2],[W/2+t,-2+h/2,pd+W/2],[-pd+W/2,-2+h/2,W/2+t],[pd+W/2,-2+h/2,W/2+t]];
-      mesh.position.set(...positions[side]);
-      mesh.frustumCulled=false; scene.add(mesh);
+  if(!_oceanUniforms)return;
+  _oceanUniforms.time.value=now*0.001;
+  if(scene.fog){
+    _oceanUniforms.skyColor.value.copy(scene.fog.color);
+    if(scene.fog.near!==undefined){
+      _oceanUniforms.fogNear.value=scene.fog.near;
+      _oceanUniforms.fogFar.value=scene.fog.far;
     }
-  });
+  }
 }
 
 // ─── PERFORMANCE: distance-based culling ──────────────────────────────────────
-let _cullTimer=0;
+const RENDER_DIST = 62;
+let _cullTimer = 0;
 function updateCulling(){
   _cullTimer++;
-  if(_cullTimer%4!==0)return; // run every 4 frames only
-  if(!camera||!pPos)return;
-  const cx=pPos.x,cz=pPos.z;
+  if(_cullTimer % 4 !== 0) return;
+  if(!camera || !pPos) return;
+  const cx=pPos.x, cz=pPos.z;
   const RD2=RENDER_DIST*RENDER_DIST;
   scene.children.forEach(obj=>{
-    if(obj.isLight||obj===_oceanMesh||obj.isCamera||obj===playerMesh)return;
-    if(bots.some(b=>b.mesh===obj))return; // bots handled in moveBots
-    const dx=obj.position.x-cx,dz=obj.position.z-cz;
-    obj.visible=(dx*dx+dz*dz)<RD2;
+    if(obj.isLight || obj===_oceanMesh || obj.isCamera || obj===playerMesh) return;
+    if(bots.some(b=>b.mesh===obj)) return;
+    const dx=obj.position.x-cx, dz=obj.position.z-cz;
+    obj.visible = (dx*dx + dz*dz) < RD2;
   });
 }
-const RENDER_DIST=58;
 
 function loadEnemyModel(onDone){
   const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
@@ -1378,117 +1392,112 @@ function loadPlayerModel(onDone){
 
 function _attachPlayerGLB(gltf){
   if(!playerMesh)return;
-  // Remove old procedural children
   while(playerMesh.children.length>0)playerMesh.remove(playerMesh.children[0]);
 
   const mdl=gltf.scene;
   mdl.traverse(c=>{
-    if(c.isMesh){c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;if(c.material)c.material.side=T.FrontSide;}
+    if(c.isMesh){
+      c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;
+      if(c.material)c.material.side=T.FrontSide;
+    }
   });
-  // Scale to ~1.8m tall
+
+  // Scale to ~1.8m
   const box=new T.Box3().setFromObject(mdl);
   const sz=box.getSize(new T.Vector3());
   const tall=Math.max(sz.x,sz.y,sz.z);
   if(tall>0){const sc=1.8/tall;mdl.scale.set(sc,sc,sc);}
-  // Ground-align
   const box2=new T.Box3().setFromObject(mdl);
   mdl.position.y-=box2.min.y;
 
   playerMesh.add(mdl);
   playerGLBModel=mdl;
 
-  if(!playerGLBClips||playerGLBClips.length===0){
-    // No clips — just set up mixer, procedural fallback will run
-    playerGLBMixer=new T.AnimationMixer(mdl);
-    playerGLBMixer._currentState=null;
-    playerGLBMixer._actions={};
-    console.warn('⚠️ Bro.glb has NO animation clips — using procedural fallback');
+  const clips=gltf.animations||[];
+  console.log('🎭 Bro.glb clips ('+clips.length+'):', clips.map((c,i)=>i+':"'+c.name+'"').join(', '));
+
+  if(clips.length===0){
+    console.warn('⚠️ Bro.glb has NO clips — T-pose only');
+    playerGLBMixer=null;
     return;
   }
 
-  // Log available clips
-  console.log('🎭 Bro.glb clips:', playerGLBClips.map((c,i)=>i+': "'+c.name+'"').join(', '));
-
-  // Build mixer
+  // ── Build mixer ──────────────────────────────────────────────────────────
   playerGLBMixer=new T.AnimationMixer(mdl);
-  playerGLBMixer._currentState=null;
+  playerGLBMixer._currentState='';
   playerGLBMixer._actions={};
+  playerGLBMixer._clips=clips;
 
-  // Find a clip by trying several name variants
-  function findClip(names){
-    for(const n of names){const c=T.AnimationClip.findByName(playerGLBClips,n);if(c)return c;}
+  // Helper: find by exact name, then partial match
+  function pick(keywords){
+    for(const kw of keywords){
+      const exact=clips.find(c=>c.name===kw);
+      if(exact)return exact;
+    }
+    for(const kw of keywords){
+      const kl=kw.toLowerCase();
+      const partial=clips.find(c=>c.name.toLowerCase().includes(kl));
+      if(partial)return partial;
+    }
     return null;
   }
-  // Also try contains-match as a last resort
-  function findClipContains(keyword){
-    const kl=keyword.toLowerCase();
-    return playerGLBClips.find(c=>c.name.toLowerCase().includes(kl))||null;
-  }
 
-  // Map each game-state to the best matching clip
-  const idleClip = findClip(['Idle','idle','Stand','stand','Armature|Idle','mixamo.com|Layer0'])
-                || findClipContains('idle') || findClipContains('stand') || playerGLBClips[0];
-  const walkClip = findClip(['Walk','walk','Walking','Run','run','WalkForward','Armature|Walk'])
-                || findClipContains('walk') || findClipContains('run')
-                || playerGLBClips[Math.min(1,playerGLBClips.length-1)];
-  const shootClip= findClip(['Shoot','shoot','Fire','fire','Attack','attack','Rifle_Aiming_Idle','Firing','Armature|Shoot'])
-                || findClipContains('shoot') || findClipContains('fire') || findClipContains('attack') || idleClip;
-  const jumpClip = findClip(['Jump','jump','Jumping','JumpUp','Armature|Jump'])
-                || findClipContains('jump') || walkClip;
+  // Map states to clips — generous fallbacks
+  const clip0=clips[0];
+  const clipMap={
+    idle : pick(['Idle','idle','Stand','stand','Armature|Idle','TPose'])||clip0,
+    walk : pick(['Walk','walk','Run','run','Walking','Running','Armature|Walk'])||clips[Math.min(1,clips.length-1)],
+    shoot: pick(['Shoot','shoot','Fire','Firing','Attack','Armature|Shoot'])||clip0,
+    jump : pick(['Jump','jump','Jumping','Armature|Jump'])||clip0,
+  };
 
-  const clipMap={idle:idleClip, walk:walkClip, shoot:shootClip, jump:jumpClip};
-  console.log('🎮 Player anim map — idle:"'+idleClip?.name+'" walk:"'+walkClip?.name+'" shoot:"'+shootClip?.name+'" jump:"'+jumpClip?.name+'"');
+  console.log('🎮 Mapped — idle:"'+clipMap.idle.name+'" walk:"'+clipMap.walk.name+'" shoot:"'+clipMap.shoot.name+'"');
 
-  // Create & prime all actions at weight 0
-  const seen=new Set();
+  // Create one action per unique clip, start them all paused at weight 0
+  const created=new Map();
   Object.entries(clipMap).forEach(([state,clip])=>{
-    if(!clip)return;
-    const action=playerGLBMixer.clipAction(clip);
-    action.enabled=true;
-    action.setEffectiveWeight(0);
-    action.setEffectiveTimeScale(1);
-    if(state==='jump'){action.setLoop(T.LoopOnce,1);action.clampWhenFinished=true;}
-    else action.setLoop(T.LoopRepeat,Infinity);
-    if(!seen.has(clip.name)){action.play();seen.add(clip.name);}
-    playerGLBMixer._actions[state]=action;
+    if(!created.has(clip.name)){
+      const a=playerGLBMixer.clipAction(clip);
+      a.enabled=true;
+      a.setLoop(state==='jump'?T.LoopOnce:T.LoopRepeat, state==='jump'?1:Infinity);
+      if(state==='jump')a.clampWhenFinished=true;
+      a.weight=0;
+      a.play(); // must call play() so the action is registered in the mixer
+      created.set(clip.name,a);
+    }
+    playerGLBMixer._actions[state]=created.get(clip.name);
   });
 
-  // Kick off idle immediately
-  _setPlayerGLBAnim('idle',0);
+  // Activate idle immediately at full weight
+  const idleA=playerGLBMixer._actions['idle'];
+  idleA.weight=1;
+  playerGLBMixer._currentState='idle';
+  console.log('✅ Player animation ready — idle playing');
 }
 
-// Crossfade player GLB to a new animation state
-function _setPlayerGLBAnim(state, fadeDur){
+// Switch player animation — uses Three.js crossFadeTo for bulletproof blending
+function _setPlayerGLBAnim(state){
   if(!playerGLBMixer||!playerGLBMixer._actions)return;
   if(state===playerGLBMixer._currentState)return;
-  const fadeDuration=(fadeDur===undefined)?0.15:fadeDur;
-  const prev=playerGLBMixer._currentState;
-  const prevAction=prev?playerGLBMixer._actions[prev]:null;
-  const nextAction=playerGLBMixer._actions[state];
-  if(!nextAction)return;
+
+  const curA=playerGLBMixer._actions[playerGLBMixer._currentState];
+  const nextA=playerGLBMixer._actions[state];
+  if(!nextA)return;
+  if(curA===nextA){playerGLBMixer._currentState=state;return;}
 
   playerGLBMixer._currentState=state;
+  const fd=0.18;
 
-  // Same underlying clip — just update state label
-  if(prevAction&&prevAction===nextAction)return;
+  // Reset next action to start of clip before crossfading
+  nextA.enabled=true;
+  nextA.setLoop(state==='jump'?T.LoopOnce:T.LoopRepeat, state==='jump'?1:Infinity);
+  if(state==='jump')nextA.clampWhenFinished=true;
+  nextA.time=0;
+  nextA.weight=0;
+  nextA.play();
 
-  nextAction.enabled=true;
-  nextAction.setEffectiveTimeScale(1);
-  if(state==='jump'){nextAction.setLoop(T.LoopOnce,1);nextAction.clampWhenFinished=true;}
-  else nextAction.setLoop(T.LoopRepeat,Infinity);
-
-  if(fadeDuration===0||!prevAction){
-    playerGLBMixer.stopAllAction();
-    nextAction.reset();
-    nextAction.setEffectiveWeight(1);
-    nextAction.play();
-  } else {
-    prevAction.fadeOut(fadeDuration);
-    // Must call play() first so the action is active, then fadeIn adjusts weight
-    if(!nextAction.isRunning()){nextAction.reset();nextAction.play();}
-    nextAction.setEffectiveWeight(0);
-    nextAction.fadeIn(fadeDuration);
-  }
+  if(curA){curA.crossFadeTo(nextA,fd,true);}
+  else{nextA.weight=1;}
 }
 
 // Play a named animation clip on the player mixer
@@ -1685,20 +1694,23 @@ async function _startEngine(lobbyData){
     loader.setPath(base);
     loader.load(
       ['right.png','left.png','top.png','bottom.png','front.png','back.png'],
-      tex=>{scene.background=tex;scene.fog=new T.Fog(0x8ab4d8,32,90);},
+      tex=>{
+        scene.background=tex;
+        scene.fog=new T.Fog(0x8ab4d8,35,110);
+      },
       undefined,
-      ()=>{scene.background=new T.Color(0x6a9cc0);scene.fog=new T.Fog(0x6a9cc0,28,85);}
+      ()=>{
+        scene.background=new T.Color(0x6a9cc0);
+        scene.fog=new T.Fog(0x6a9cc0,35,110);
+      }
     );
     scene.background=new T.Color(0x6a9cc0);
-    scene.fog=new T.Fog(0x6a9cc0,28,85);
+    scene.fog=new T.Fog(0x6a9cc0,35,110);
   })();
 
   // ── OCEAN (boundary, animated waves) ─────────────────────────────────
   _buildOcean();
-
-  // ── MOUNTAINS (image billboard around perimeter) ──────────────────────
-  _buildMountains();
-  camera=new T.PerspectiveCamera(72,window.innerWidth/window.innerHeight,.08,100);
+  camera=new T.PerspectiveCamera(72,window.innerWidth/window.innerHeight,.08,200);
   camera.rotation.order='YXZ';
 
   // Blue spawns top-left residential, Red spawns bottom-right market
@@ -2422,13 +2434,15 @@ function movePlayer(dt){
   const spd=Math.sqrt(velX*velX+velZ*velZ);
   if(spd>maxSpd){velX=velX/spd*maxSpd;velZ=velZ/spd*maxSpd;}
 
-  // ── Collision + world bounds ──────────────────────────────────────────────
+  // ── Collision + world bounds — water IS the boundary ─────────────────────
   const R=0.32;
   const nx=pPos.x+velX, nz=pPos.z+velZ;
   if(!isWall(nx+R,pPos.z)&&!isWall(nx-R,pPos.z))pPos.x=nx; else velX=0;
   if(!isWall(pPos.x,nz+R)&&!isWall(pPos.x,nz-R))pPos.z=nz; else velZ=0;
-  pPos.x=Math.max(R,Math.min(MS*CS-R,pPos.x));
-  pPos.z=Math.max(R,Math.min(MS*CS-R,pPos.z));
+  // Water boundary — player stops 2 units inside map edge (standing on shore, not in water)
+  const SHORE=2.0;
+  pPos.x=Math.max(SHORE,Math.min(MS*CS-SHORE,pPos.x));
+  pPos.z=Math.max(SHORE,Math.min(MS*CS-SHORE,pPos.z));
 
   // ── Gravity + jump ────────────────────────────────────────────────────────
   pVelY+=GRAV*dt; pPos.y+=pVelY*dt;
