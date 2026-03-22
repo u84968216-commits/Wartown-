@@ -1177,6 +1177,130 @@ let playerGLBModel=null;     // the actual loaded model group inside playerMesh
 // Clock for animation mixers
 let _glbClock=null;
 
+// ─── OCEAN ────────────────────────────────────────────────────────────────────
+let _oceanMesh=null, _oceanUniforms=null;
+const OCEAN_MARGIN=28;
+const isMobile=/Mobi|Android/i.test(navigator.userAgent);
+
+function _buildOcean(){
+  const W=MS*CS;
+  const OW=W+OCEAN_MARGIN*2;
+  _oceanUniforms={
+    time:{value:0},
+    waterColor:{value:new T.Color(0x0077bb)},
+    deepColor:{value:new T.Color(0x003366)},
+    waveHeight:{value:0.36},
+    waveFreq:{value:0.52},
+    waveSpeed:{value:0.85},
+    fogNear:{value:28},
+    fogFar:{value:90},
+  };
+  const vert=`
+    uniform float time,waveHeight,waveFreq,waveSpeed;
+    varying float vW; varying vec2 vUv;
+    void main(){
+      vUv=uv; vec3 p=position;
+      float w=sin(p.x*waveFreq+time*waveSpeed)*waveHeight
+             +sin(p.z*waveFreq*1.3+time*waveSpeed*1.1+2.0)*waveHeight*0.5
+             +sin((p.x-p.z)*waveFreq*0.5+time*waveSpeed*0.8)*waveHeight*0.3;
+      p.y+=w; vW=w/waveHeight*0.5+0.5;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);
+    }`;
+  const frag=`
+    uniform vec3 waterColor,deepColor; uniform float fogNear,fogFar;
+    varying float vW; varying vec2 vUv;
+    void main(){
+      vec3 col=mix(deepColor,waterColor,vW*0.8+0.2);
+      float foam=smoothstep(0.70,0.86,vW);
+      col=mix(col,vec3(0.88,0.96,1.0),foam*0.5);
+      float edge=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y));
+      col=mix(deepColor,col,smoothstep(0.0,0.1,edge));
+      float depth=gl_FragCoord.z/gl_FragCoord.w;
+      float ff=smoothstep(fogNear,fogFar,depth);
+      col=mix(col,vec3(0.54,0.71,0.85),ff*0.65);
+      gl_FragColor=vec4(col,0.9);
+    }`;
+  const segs=isMobile?28:48;
+  const geo=new T.PlaneGeometry(OW,OW,segs,segs);
+  geo.rotateX(-Math.PI/2);
+  _oceanMesh=new T.Mesh(geo,new T.ShaderMaterial({
+    uniforms:_oceanUniforms,vertexShader:vert,fragmentShader:frag,
+    transparent:true,side:T.DoubleSide
+  }));
+  _oceanMesh.position.set(W/2,-0.5,W/2);
+  _oceanMesh.frustumCulled=false;
+  scene.add(_oceanMesh);
+  // Thin ground-to-ocean border
+  const bm=new T.MeshLambertMaterial({color:0x1a2a18});
+  [[W/2,-1,W/2,W+4,1.2,2],[W/2,W+1,W/2,W+4,1.2,2],[-1,W/2,W/2,2,1.2,W],[W+1,W/2,W/2,2,1.2,W]]
+    .forEach(([x,z,y,w,h,d])=>{
+      const m=new T.Mesh(new T.BoxGeometry(w,h,d),bm);
+      m.position.set(x,0.1,z);scene.add(m);
+    });
+}
+
+function tickOcean(now){
+  if(_oceanUniforms)_oceanUniforms.time.value=now*0.001;
+}
+
+// ─── MOUNTAINS ────────────────────────────────────────────────────────────────
+function _buildMountains(){
+  const W=MS*CS;
+  const href=window.location.href.split('?')[0].split('#')[0];
+  const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
+  const loader=new T.TextureLoader();
+  loader.load(base+'mountain.jpg',tex=>{
+    tex.wrapS=T.RepeatWrapping; tex.repeat.set(3,1);
+    const mat=new T.MeshBasicMaterial({map:tex,side:T.DoubleSide,fog:false,transparent:false});
+    const mH=24, mW=W+OCEAN_MARGIN*2+12;
+    const pd=OCEAN_MARGIN+4;
+    [
+      {x:W/2,    z:-pd,      ry:0},
+      {x:W/2,    z:W+pd,     ry:Math.PI},
+      {x:-pd,    z:W/2,      ry:Math.PI/2},
+      {x:W+pd,   z:W/2,      ry:-Math.PI/2},
+    ].forEach(s=>{
+      const m=new T.Mesh(new T.PlaneGeometry(mW,mH),mat);
+      m.position.set(s.x,mH/2-2,s.z);
+      m.rotation.y=s.ry;m.frustumCulled=false;
+      scene.add(m);
+    });
+  },undefined,()=>_buildProceduralMountains(W));
+}
+
+function _buildProceduralMountains(W){
+  const mat=new T.MeshLambertMaterial({color:0x4a6040});
+  const pd=OCEAN_MARGIN+W/2-4;
+  [0,1,2,3].forEach(side=>{
+    for(let i=0;i<9;i++){
+      const h=12+Math.random()*14, w2=7+Math.random()*9;
+      const geo=new T.ConeGeometry(w2,h,5);
+      const mesh=new T.Mesh(geo,mat);
+      const t=(i/8-0.5)*(W+OCEAN_MARGIN*1.4);
+      const positions=[[W/2+t,-2+h/2,-pd+W/2],[W/2+t,-2+h/2,pd+W/2],[-pd+W/2,-2+h/2,W/2+t],[pd+W/2,-2+h/2,W/2+t]];
+      mesh.position.set(...positions[side]);
+      mesh.frustumCulled=false; scene.add(mesh);
+    }
+  });
+}
+
+// ─── PERFORMANCE: distance-based culling ──────────────────────────────────────
+let _cullTimer=0;
+function updateCulling(){
+  _cullTimer++;
+  if(_cullTimer%4!==0)return; // run every 4 frames only
+  if(!camera||!pPos)return;
+  const cx=pPos.x,cz=pPos.z;
+  const RD2=RENDER_DIST*RENDER_DIST;
+  scene.children.forEach(obj=>{
+    if(obj.isLight||obj===_oceanMesh||obj.isCamera||obj===playerMesh)return;
+    if(bots.some(b=>b.mesh===obj))return; // bots handled in moveBots
+    const dx=obj.position.x-cx,dz=obj.position.z-cz;
+    obj.visible=(dx*dx+dz*dz)<RD2;
+  });
+}
+const RENDER_DIST=58;
+
 function loadEnemyModel(onDone){
   const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
   if(!GLTFLoader){onDone();return;}
@@ -1343,35 +1467,26 @@ function _setPlayerGLBAnim(state, fadeDur){
   const nextAction=playerGLBMixer._actions[state];
   if(!nextAction)return;
 
-  // If both states share the same underlying clip, just record state change
-  if(prevAction&&prevAction===nextAction){
-    playerGLBMixer._currentState=state;
-    return;
-  }
-
   playerGLBMixer._currentState=state;
 
-  if(prevAction){
-    prevAction.fadeOut(fadeDuration);
-  }
-  // Ensure the next action is actually running and fades in
+  // Same underlying clip — just update state label
+  if(prevAction&&prevAction===nextAction)return;
+
   nextAction.enabled=true;
   nextAction.setEffectiveTimeScale(1);
-  if(state==='jump'){
-    nextAction.setLoop(T.LoopOnce,1);
-    nextAction.clampWhenFinished=true;
-  } else {
-    nextAction.setLoop(T.LoopRepeat,Infinity);
-  }
-  if(fadeDuration===0){
-    // Instant switch — stop all others, play this one at full weight
-    if(prevAction)prevAction.stop();
+  if(state==='jump'){nextAction.setLoop(T.LoopOnce,1);nextAction.clampWhenFinished=true;}
+  else nextAction.setLoop(T.LoopRepeat,Infinity);
+
+  if(fadeDuration===0||!prevAction){
+    playerGLBMixer.stopAllAction();
     nextAction.reset();
     nextAction.setEffectiveWeight(1);
     nextAction.play();
   } else {
-    nextAction.reset();
-    nextAction.setEffectiveWeight(1);
+    prevAction.fadeOut(fadeDuration);
+    // Must call play() first so the action is active, then fadeIn adjusts weight
+    if(!nextAction.isRunning()){nextAction.reset();nextAction.play();}
+    nextAction.setEffectiveWeight(0);
     nextAction.fadeIn(fadeDuration);
   }
 }
@@ -1556,38 +1671,33 @@ async function _startEngine(lobbyData){
   }
   renderer=new T.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
   renderer.setSize(window.innerWidth,window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+  // Dynamic pixel ratio — cap at 1 on mobile for performance
+  const isMobile=/Mobi|Android/i.test(navigator.userAgent);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile?1:1.5));
   renderer.shadowMap.enabled=false;
   scene=new T.Scene();
 
   // ── SKYBOX ────────────────────────────────────────────────────────────
-  // Images must be in same folder as index.html on GitHub:
-  // right.png, left.png, top.png, bottom.png, front.png, back.png  (508×508)
   (()=>{
     const href=window.location.href.split('?')[0].split('#')[0];
     const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
     const loader=new T.CubeTextureLoader();
-    // Three.js CubeTextureLoader order: +X, -X, +Y, -Y, +Z, -Z
     loader.setPath(base);
     loader.load(
       ['right.png','left.png','top.png','bottom.png','front.png','back.png'],
-      tex=>{
-        scene.background=tex;
-        // Tint fog to match skybox horizon colour (light blue)
-        scene.fog=new T.Fog(0x8ab4d8,32,90);
-      },
+      tex=>{scene.background=tex;scene.fog=new T.Fog(0x8ab4d8,32,90);},
       undefined,
-      err=>{
-        // Fallback if images not found
-        console.warn('Skybox images not found, using solid colour.',err);
-        scene.background=new T.Color(0x6a9cc0);
-        scene.fog=new T.Fog(0x6a9cc0,28,85);
-      }
+      ()=>{scene.background=new T.Color(0x6a9cc0);scene.fog=new T.Fog(0x6a9cc0,28,85);}
     );
-    // Set solid colour immediately so sky isn't black while loading
     scene.background=new T.Color(0x6a9cc0);
     scene.fog=new T.Fog(0x6a9cc0,28,85);
   })();
+
+  // ── OCEAN (boundary, animated waves) ─────────────────────────────────
+  _buildOcean();
+
+  // ── MOUNTAINS (image billboard around perimeter) ──────────────────────
+  _buildMountains();
   camera=new T.PerspectiveCamera(72,window.innerWidth/window.innerHeight,.08,100);
   camera.rotation.order='YXZ';
 
@@ -1637,12 +1747,14 @@ async function _startEngine(lobbyData){
           moveBots(dt);
           tickGrens(dt);
           tickParticles(dt);
+          tickOcean(now);
           updateMM();
+          updateCulling();
           if(!G.isPractice&&CUR_USER)pushMyPos(now);
           syncRemotePlayers();
-          // Update player GLB mixer
-          if(playerGLBMixer)playerGLBMixer.update(dt);
         }
+        // Mixers ALWAYS update every frame (even when paused, so pose holds)
+        if(playerGLBMixer)playerGLBMixer.update(dt);
         renderer.render(scene,camera);
         animId=requestAnimationFrame(loop);
       }
