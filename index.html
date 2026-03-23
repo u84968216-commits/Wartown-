@@ -1400,10 +1400,24 @@ function _attachPlayerGLB(gltf){
 
   const mdl=gltf.scene;
   mdl.traverse(c=>{
-    if(c.isMesh){
-      c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;
-      if(c.material)c.material.side=T.FrontSide;
-    }
+    if(!c.isMesh)return;
+    c.castShadow=false; c.receiveShadow=false; c.frustumCulled=false;
+    if(!c.material)return;
+    // Clone material so we don't mutate the original
+    const mats=Array.isArray(c.material)?c.material:[c.material];
+    const fixed=mats.map(m=>{
+      const mc=m.clone();
+      mc.side=T.DoubleSide;        // prevents black/dark backface artefacts
+      mc.depthWrite=true;
+      mc.transparent=mc.opacity<1||mc.alphaTest>0;
+      // Remove any red tint that might be lingering from hit flash
+      if(mc.color&&mc.color.r>0.85&&mc.color.g<0.3&&mc.color.b<0.3){
+        mc.color.set(0xffffff); // reset accidental red tint
+      }
+      mc.needsUpdate=true;
+      return mc;
+    });
+    c.material=Array.isArray(c.material)?fixed:fixed[0];
   });
 
   // Scale to ~1.8m
@@ -1544,9 +1558,22 @@ function spawnBotWithGLB(botObj){
     scene.remove(ph);
     const mdl=gltf.scene;
     mdl.traverse(c=>{
-      if(c.isMesh){c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;if(c.material)c.material.side=T.FrontSide;}
+      if(!c.isMesh)return;
+      c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;
+      if(!c.material)return;
+      const mats=Array.isArray(c.material)?c.material:[c.material];
+      const fixed=mats.map(m=>{
+        const mc=m.clone();
+        mc.side=T.DoubleSide;
+        mc.depthWrite=true;
+        mc.transparent=mc.opacity<1||mc.alphaTest>0;
+        if(mc.color&&mc.color.r>0.85&&mc.color.g<0.3&&mc.color.b<0.3)mc.color.set(0xffffff);
+        mc.needsUpdate=true;
+        return mc;
+      });
+      c.material=Array.isArray(c.material)?fixed:fixed[0];
     });
-    // Fix hair z-fighting / glaze
+    // Fix hair z-fighting
     _fixHair(mdl);
     // Scale
     const box=new T.Box3().setFromObject(mdl);
@@ -1725,8 +1752,11 @@ async function _startEngine(lobbyData){
   camera.position.copy(pPos);
 
   setLoad(50,'Building world...');
-  buildMap();buildPlayerMesh();buildGun();addLights();
-  setLoad(65,'Loading enemy model...');
+  const href2=window.location.href.split('?')[0].split('#')[0];
+  const base2=href2.endsWith('/')?href2:href2.substring(0,href2.lastIndexOf('/')+1);
+  _loadGroundGLBs(base2,()=>{
+    buildMap();buildPlayerMesh();buildGun();addLights();
+    setLoad(65,'Loading enemy model...');
 
   loadEnemyModel(()=>{
     setLoad(72,'Loading player model...');
@@ -1780,6 +1810,7 @@ async function _startEngine(lobbyData){
     },380);
   }); // end loadPlayerModel callback
   }); // end loadEnemyModel callback
+  }); // end _loadGroundGLBs callback
 
   window.onresize=()=>{if(!renderer)return;renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();};
 }
@@ -1854,17 +1885,69 @@ function makeOnlineMesh(team){
   return g;
 }
 
+// ─── GLB TEXTURE MATERIALS (road.glb + field.glb) ────────────────────────────
+// These load the GLB models and extract their materials to use as ground textures.
+// The models themselves are not placed in the scene — only their textures are used.
+let _roadMat=null,  _fieldMat=null;
+
+function _loadGroundGLBs(base, onDone){
+  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+  let loaded=0;
+  const done=()=>{if(++loaded>=2)onDone();};
+
+  // road.glb — extract first mesh material, apply repeat tiling
+  fetch(base+'road.glb')
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
+    .then(buf=>{
+      new GLTFLoader().parse(buf,base,gltf=>{
+        gltf.scene.traverse(c=>{
+          if(c.isMesh&&c.material&&!_roadMat){
+            _roadMat=c.material.clone();
+            if(_roadMat.map){
+              _roadMat.map.wrapS=_roadMat.map.wrapT=T.RepeatWrapping;
+              _roadMat.map.repeat.set(4,4); // tile every 4 world units
+              _roadMat.map.needsUpdate=true;
+            }
+          }
+        });
+        console.log('✅ road.glb material extracted');
+        done();
+      },()=>done());
+    })
+    .catch(()=>done());
+
+  // field.glb — same approach
+  fetch(base+'field.glb')
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
+    .then(buf=>{
+      new GLTFLoader().parse(buf,base,gltf=>{
+        gltf.scene.traverse(c=>{
+          if(c.isMesh&&c.material&&!_fieldMat){
+            _fieldMat=c.material.clone();
+            if(_fieldMat.map){
+              _fieldMat.map.wrapS=_fieldMat.map.wrapT=T.RepeatWrapping;
+              _fieldMat.map.repeat.set(6,6);
+              _fieldMat.map.needsUpdate=true;
+            }
+          }
+        });
+        console.log('✅ field.glb material extracted');
+        done();
+      },()=>done());
+    })
+    .catch(()=>done());
+}
+
 // ─── MAP BUILD ───────────────────────────────────────────────────────────────
 function buildMap(){
   const W=MS*CS; // 128 world units
   const CX=MAP_CX*CS, CZ=MAP_CZ*CS; // world center = 64,64
   const R=MAP_R*CS;   // circle radius in world units = 56
 
-  // ── SHARED MATERIALS ─────────────────────────────────────────────────────
-  const mField  =new T.MeshLambertMaterial({color:0x3a6b28}); // green grass
-  const mFieldD =new T.MeshLambertMaterial({color:0x2e5520}); // darker field patches
-  const mRoad   =new T.MeshLambertMaterial({color:0xc8b89a}); // sandy hexagonal path
-  const mRoadMk =new T.MeshLambertMaterial({color:0xe8d4b0}); // lighter road marking
+  // ── SHARED MATERIALS — use GLB textures if loaded, else colour fallback ──
+  const mField  =_fieldMat || new T.MeshLambertMaterial({color:0x4a7a30});
+  const mRoad   =_roadMat  || new T.MeshLambertMaterial({color:0xc8b890});
+  const mRoadMk =new T.MeshLambertMaterial({color:0xe8d4a0});
   const mCenter =new T.MeshLambertMaterial({color:0xd4c4a0}); // center plaza
   const mTower  =new T.MeshLambertMaterial({color:0x5a7090}); // tower base grey-blue
   const mTowerAc=new T.MeshLambertMaterial({color:0x3a5070});
@@ -1914,11 +1997,11 @@ function buildMap(){
     addFlat(rlMat, CX+off, CZ, .3, R*2, .015); // vert road edges
     addFlat(rlMat, CX, CZ+off, R*2, .3, .015); // horiz road edges
   });
-  // Center dashes
-  for(let i=-6;i<=6;i++){
+  // Center dashes — reduced count for performance
+  for(let i=-4;i<=4;i++){
     if(Math.abs(i)<1)continue;
-    addFlat(mRoadMk, CX, CZ+i*8, .3, 4, .016);  // vertical dashes
-    addFlat(mRoadMk, CX+i*8, CZ, 4, .3, .016);  // horizontal dashes
+    addFlat(mRoadMk, CX, CZ+i*10, .35, 5, .016);
+    addFlat(mRoadMk, CX+i*10, CZ, 5, .35, .016);
   }
 
   // ── 3. CENTER PLAZA ───────────────────────────────────────────────────────
@@ -2323,24 +2406,29 @@ function buildGun(){
 
 // ─── BOTS ────────────────────────────────────────────────────────────────────
 let _botWave=0, _botWaveTimer=0;
-const BOT_SPAWN_R=16; // spawn ring radius around center
+const BOT_SPAWN_R=16;
+const MAX_BOTS_ALIVE=4; // hard cap — never more than 4 bots at once
 
 function spawnBots(cnt,diff){
   G.botDiff=diff;
   _botWave=1;
-  _spawnBotWave(cnt);
+  _botWaveTimer=0;
+  // Clamp initial count — max 3 bots at start
+  _spawnBotWave(Math.min(cnt,3));
 }
 
 function _spawnBotWave(cnt){
+  // Never exceed hard cap
+  const alive=bots.filter(b=>b.alive).length;
+  const canSpawn=Math.max(0,Math.min(cnt, MAX_BOTS_ALIVE-alive));
+  if(canSpawn===0)return;
   const CX=MAP_CX*CS, CZ=MAP_CZ*CS;
-  for(let i=0;i<cnt;i++){
-    const a=(i/cnt)*Math.PI*2 + Math.random()*.4;
-    const r=BOT_SPAWN_R + Math.random()*6;
+  for(let i=0;i<canSpawn;i++){
+    const a=(i/canSpawn)*Math.PI*2+Math.random()*.4;
+    const r=BOT_SPAWN_R+Math.random()*4;
     const bx=CX+Math.cos(a)*r, bz=CZ+Math.sin(a)*r;
     const bot={x:bx,z:bz,ang:0,health:100,state:'patrol',shootT:0,moveT:0,
-               alive:true,patAng:a+Math.PI,id:bots.length,mesh:null,
-               // Bot patrol target: walk toward nearest tower via roads
-               targetX:CX,targetZ:CZ};
+               alive:true,patAng:a+Math.PI,id:bots.length,mesh:null};
     bots.push(bot);
     spawnBotWithGLB(bot);
   }
@@ -2349,13 +2437,12 @@ function _spawnBotWave(cnt){
 function tickBotWaves(dt){
   if(!G.matchActive||G.isPaused)return;
   _botWaveTimer+=dt;
-  // New wave every 30 seconds if fewer than 6 bots alive
-  if(_botWaveTimer>30&&bots.filter(b=>b.alive).length<6){
+  // New bot only every 45s AND only if fewer than MAX alive
+  if(_botWaveTimer>45&&bots.filter(b=>b.alive).length<MAX_BOTS_ALIVE){
     _botWaveTimer=0;
     _botWave++;
-    const waveSize=Math.min(2+_botWave,8);
-    _spawnBotWave(waveSize);
-    toast('⚠️ Wave '+_botWave+' incoming!');
+    _spawnBotWave(1); // spawn just 1 at a time to avoid lag spike
+    toast('⚠️ Enemy incoming!');
   }
 }
 
@@ -2754,12 +2841,16 @@ function fireOnce(){
     const hz=bestBot.mesh.position.z;
     const hy=bestBot.mesh.position.y+0.9;
     spawnImpactParticles(hx,hy,hz,'flesh');
-    // Flash red
+    // Flash red briefly, then restore original colour
     bestBot.mesh.traverse(n=>{
-      if(n.isMesh&&n.material&&n.name!=='hbBg'&&n.name!=='hbFg'){
-        const oc=n.material.color?.clone();
-        if(oc){n.material.color.set(0xff2222);setTimeout(()=>{if(n.material)n.material.color.copy(oc);},120);}
-      }
+      if(!n.isMesh||!n.material||n.name==='hbBg'||n.name==='hbFg')return;
+      const mats=Array.isArray(n.material)?n.material:[n.material];
+      mats.forEach(m=>{
+        if(!m.color)return;
+        const orig=m.color.clone();
+        m.color.set(0xff3333);
+        setTimeout(()=>{if(m&&m.color)m.color.copy(orig);},110);
+      });
     });
     if(bestBot.health<=0){
       bestBot.alive=false;
