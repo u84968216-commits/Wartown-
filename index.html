@@ -1883,12 +1883,13 @@ function makeOnlineMesh(team){
 }
 
 
-// ─── GROUND MATERIALS — road.png + grass.png ─────────────────────────────────
-// road.png  : 1008×1008 px  →  tiles every 4 world units
-// grass.png : 1012×1012 px  →  tiles every 5 world units
-// Materials are created once when the engine starts.
-// No async waiting — textures stream in and update automatically.
+// ─── GROUND MATERIALS — road.png + grass.png (both 1024×1024) ─────────────────
+// road.png  : hexagonal stone tiles — each hex ≈ 1/7 image = 146px
+//             We want ~3 hexagons per 16-unit road width → 1 tile = ~5 world units
+//             repeat = worldSize / 5  (set on each mesh via texture.repeat)
+// grass.png : large grass+stones — 1 tile covers ~8 world units for natural look
 let _roadMat=null, _fieldMat=null;
+let _roadTex=null, _grassTex=null;  // keep refs so we can set repeat per mesh
 
 function _initGroundMaterials(){
   const href=window.location.href.split('?')[0].split('#')[0];
@@ -1896,27 +1897,58 @@ function _initGroundMaterials(){
   const loader=new T.TextureLoader();
   const maxAniso=Math.min(4,renderer.capabilities.getMaxAnisotropy());
 
-  // road.png
-  const roadTex=loader.load(base+'road.png',
-    tex=>{tex.needsUpdate=true;},
+  // road.png — hexagonal stone, 1024×1024
+  _roadTex=loader.load(base+'road.png',
+    tex=>{tex.needsUpdate=true;console.log('✅ road.png loaded');},
     undefined,
-    ()=>console.warn('road.png not found — using colour fallback')
+    ()=>console.warn('road.png not found')
   );
-  roadTex.wrapS=roadTex.wrapT=T.RepeatWrapping;
-  roadTex.repeat.set(4,4); // 1008px ÷ 252px/unit = 4 units per tile
-  roadTex.anisotropy=maxAniso;
-  _roadMat=new T.MeshLambertMaterial({map:roadTex, color:0xffffff});
+  _roadTex.wrapS=_roadTex.wrapT=T.RepeatWrapping;
+  _roadTex.anisotropy=maxAniso;
+  // Default repeat — overridden per mesh based on surface size
+  _roadTex.repeat.set(3,3);
+  // Use MeshBasicMaterial so lighting does NOT bleach the texture
+  _roadMat=new T.MeshBasicMaterial({map:_roadTex});
 
-  // grass.png
-  const grassTex=loader.load(base+'grass.png',
-    tex=>{tex.needsUpdate=true;},
+  // grass.png — lush grass with flowers/stones, 1024×1024
+  _grassTex=loader.load(base+'grass.png',
+    tex=>{tex.needsUpdate=true;console.log('✅ grass.png loaded');},
     undefined,
-    ()=>console.warn('grass.png not found — using colour fallback')
+    ()=>console.warn('grass.png not found')
   );
-  grassTex.wrapS=grassTex.wrapT=T.RepeatWrapping;
-  grassTex.repeat.set(5,5); // 1012px ÷ ~202px/unit = 5 units per tile
-  grassTex.anisotropy=maxAniso;
-  _fieldMat=new T.MeshLambertMaterial({map:grassTex, color:0xffffff});
+  _grassTex.wrapS=_grassTex.wrapT=T.RepeatWrapping;
+  _grassTex.anisotropy=maxAniso;
+  _grassTex.repeat.set(7,7);
+  // MeshBasicMaterial — texture colours always accurate, no light bleaching
+  _fieldMat=new T.MeshBasicMaterial({map:_grassTex});
+}
+
+// Helper: clone road material with custom repeat for a given surface size
+function _roadMatForSize(w, d){
+  const m=_roadMat.clone();
+  if(_roadTex){
+    const t=_roadTex.clone();
+    t.wrapS=t.wrapT=T.RepeatWrapping;
+    // ~5 world units per hex tile so 1 tile = 5u
+    t.repeat.set(Math.max(1,Math.round(w/5)), Math.max(1,Math.round(d/5)));
+    t.needsUpdate=true;
+    m.map=t;
+  }
+  return m;
+}
+
+// Helper: clone grass material with custom repeat for a given surface size
+function _grassMatForSize(w, d){
+  const m=_fieldMat.clone();
+  if(_grassTex){
+    const t=_grassTex.clone();
+    t.wrapS=t.wrapT=T.RepeatWrapping;
+    // ~8 world units per grass tile
+    t.repeat.set(Math.max(1,Math.round(w/8)), Math.max(1,Math.round(d/8)));
+    t.needsUpdate=true;
+    m.map=t;
+  }
+  return m;
 }
 
 // ─── MAP BUILD ───────────────────────────────────────────────────────────────
@@ -1925,12 +1957,12 @@ function buildMap(){
   const CX=MAP_CX*CS, CZ=MAP_CZ*CS; // world center = 64,64
   const R=MAP_R*CS;   // circle radius in world units = 56
 
-  // ── MATERIALS — PNG textures always ready (set by _initGroundMaterials) ──
-  const mField  =_fieldMat;   // grass.png tiled
-  const mRoad   =_roadMat;    // road.png tiled
-  const mRoadMk =new T.MeshLambertMaterial({color:0xe8d4a0});
-  const mCenter =new T.MeshLambertMaterial({color:0xd4c4a0}); // center plaza
-  const mTower  =new T.MeshLambertMaterial({color:0x5a7090}); // tower base grey-blue
+  // ── MATERIALS — PNG textures, size-aware tiling ──────────────────────────
+  // Road surfaces use _roadMatForSize(w,d) — hexagons scale correctly per mesh
+  // Grass surfaces use _grassMatForSize(w,d) — grass scales correctly per mesh
+  const mRoadMk =new T.MeshBasicMaterial({color:0xe0cc88}); // road edge lines
+  const mCenter =new T.MeshBasicMaterial({color:0xd0be94}); // center plaza (road tex)
+  const mTower  =new T.MeshLambertMaterial({color:0x5a7090});
   const mTowerAc=new T.MeshLambertMaterial({color:0x3a5070});
   const mStatue =new T.MeshLambertMaterial({color:0xe8d060,emissive:0x806020,emissiveIntensity:.4});
   const mMerch  =new T.MeshLambertMaterial({color:0xff8833,emissive:0x662200,emissiveIntensity:.3});
@@ -1959,24 +1991,28 @@ function buildMap(){
     m.position.set(x,y,z); scene.add(m); return m;
   }
 
-  // ── 1. CIRCULAR GROUND BASE ───────────────────────────────────────────────
-  // Large field disc
+  // ── 1. CIRCULAR GROUND BASE — grass.png covers full disc ─────────────────
   const fieldGeo=new T.CircleGeometry(R+2,64);
-  const fieldMesh=new T.Mesh(fieldGeo,mField);
+  const fieldMesh=new T.Mesh(fieldGeo, _grassMatForSize((R+2)*2,(R+2)*2));
   fieldMesh.rotation.x=-Math.PI/2; fieldMesh.position.set(CX,.005,CZ);
   scene.add(fieldMesh);
 
-  // ── 2. CROSS ROADS (+) ────────────────────────────────────────────────────
-  const roadW2=ROAD_W*CS*2; // full road width
-  // Vertical road (N-S)
-  addFlat(mRoad, CX,CZ, roadW2, R*2+4, .01);
-  // Horizontal road (E-W)
-  addFlat(mRoad, CX,CZ, R*2+4, roadW2, .01);
-  // Road edge lines
-  const rlMat=new T.MeshLambertMaterial({color:0xeeddaa});
+  // ── 2. CROSS ROADS (+) — road.png with hex tiles sized for each strip ────
+  const roadW2=ROAD_W*CS*2; // full road width = 16 world units
+  const roadLen=R*2+4;      // road length = 116 world units
+  // Vertical road (N-S) — 16 wide × 116 long
+  const vRoadMesh=new T.Mesh(new T.PlaneGeometry(roadW2,roadLen), _roadMatForSize(roadW2,roadLen));
+  vRoadMesh.rotation.x=-Math.PI/2; vRoadMesh.position.set(CX,.01,CZ); scene.add(vRoadMesh);
+  // Horizontal road (E-W) — 116 wide × 16 long
+  const hRoadMesh=new T.Mesh(new T.PlaneGeometry(roadLen,roadW2), _roadMatForSize(roadLen,roadW2));
+  hRoadMesh.rotation.x=-Math.PI/2; hRoadMesh.position.set(CX,.01,CZ); scene.add(hRoadMesh);
+  // Road edge lines (thin strips, colour only — no texture needed)
+  const rlMat=new T.MeshBasicMaterial({color:0xc8a870});
   [-roadW2/2+.3, roadW2/2-.3].forEach(off=>{
-    addFlat(rlMat, CX+off, CZ, .3, R*2, .015); // vert road edges
-    addFlat(rlMat, CX, CZ+off, R*2, .3, .015); // horiz road edges
+    const em=new T.Mesh(new T.PlaneGeometry(.3,roadLen),rlMat);
+    em.rotation.x=-Math.PI/2; em.position.set(CX+off,.015,CZ); scene.add(em);
+    const em2=new T.Mesh(new T.PlaneGeometry(roadLen,.3),rlMat);
+    em2.rotation.x=-Math.PI/2; em2.position.set(CX,.015,CZ+off); scene.add(em2);
   });
   // Center dashes — reduced count for performance
   for(let i=-4;i<=4;i++){
@@ -1985,15 +2021,15 @@ function buildMap(){
     addFlat(mRoadMk, CX+i*10, CZ, 5, .35, .016);
   }
 
-  // ── 3. CENTER PLAZA ───────────────────────────────────────────────────────
+  // ── 3. CENTER PLAZA — road texture (hex tiles look great for a plaza) ────
   const plazaR=10;
   const plazaGeo=new T.CircleGeometry(plazaR,32);
-  const plazaMesh=new T.Mesh(plazaGeo,mCenter);
+  const plazaMesh=new T.Mesh(plazaGeo, _roadMatForSize(plazaR*2,plazaR*2));
   plazaMesh.rotation.x=-Math.PI/2; plazaMesh.position.set(CX,.012,CZ);
   scene.add(plazaMesh);
   // Plaza ring border
   const ringGeo=new T.RingGeometry(plazaR-.4,plazaR,32);
-  const ringMesh=new T.Mesh(ringGeo,mRoadMk);
+  const ringMesh=new T.Mesh(ringGeo,new T.MeshBasicMaterial({color:0xc8a870}));
   ringMesh.rotation.x=-Math.PI/2; ringMesh.position.set(CX,.014,CZ);
   scene.add(ringMesh);
 
@@ -2077,10 +2113,10 @@ function buildMap(){
     }
   });
 
-  // ── 6. CIRCULAR OUTER RING ROAD (at ~80% of radius) ──────────────────────
+  // ── 6. CIRCULAR OUTER RING ROAD — road texture ───────────────────────────
   const ringR=R*.78;
   const ringRoadGeo=new T.RingGeometry(ringR-3,ringR+3,64);
-  const ringRoadMesh=new T.Mesh(ringRoadGeo,mRoad);
+  const ringRoadMesh=new T.Mesh(ringRoadGeo, _roadMatForSize(12,ringR*2*Math.PI));
   ringRoadMesh.rotation.x=-Math.PI/2; ringRoadMesh.position.set(CX,.008,CZ);
   scene.add(ringRoadMesh);
   // Ring road edges
@@ -2090,19 +2126,13 @@ function buildMap(){
     scene.add(rm);
   });
 
-  // ── 7. FOUR FIELD ZONES (between roads) ───────────────────────────────────
-  // Grass patches with subtle variation — NE/SW/NW/SE quadrants
-  const zoneCols=[0x4a8030,0x3a7028,0x448832,0x3a7028];
-  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz],i)=>{
-    const qMat=new T.MeshLambertMaterial({color:zoneCols[i]});
-    const qGeo=new T.CircleGeometry(R*.38,32,i*Math.PI/2,Math.PI/2);
-    // Zone offset
+  // ── 7. FOUR FIELD ZONES — grass.png in each quadrant ────────────────────
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz])=>{
     const qx=CX+sx*(roadW2/2+R*.2), qz=CZ+sz*(roadW2/2+R*.2);
-    const qm=new T.Mesh(new T.CircleGeometry(R*.36,16),qMat);
+    const qr=R*.36;
+    const qGeo=new T.CircleGeometry(qr,16);
+    const qm=new T.Mesh(qGeo, _grassMatForSize(qr*2,qr*2));
     qm.rotation.x=-Math.PI/2; qm.position.set(qx,.007,qz); scene.add(qm);
-    // Zone letter marker
-    const zLbl=box(new T.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.4}),
-      qx,.05,qz, R*.1,.04,R*.1);
   });
 
   // ── 8. ROCKS & COVER OBJECTS (scattered in field zones) ───────────────────
@@ -2203,9 +2233,16 @@ function buildMap(){
 }
 
 function addLights(){
-  scene.add(new T.AmbientLight(0xfff0e8,.65));
-  const sun=new T.DirectionalLight(0xfff5e0,1.1);sun.position.set(40,60,30);scene.add(sun);
-  const fill=new T.DirectionalLight(0x8ab4d4,.28);fill.position.set(-30,15,-20);scene.add(fill);
+  // Soft ambient — low enough that textures show their real colour
+  scene.add(new T.AmbientLight(0xd8e8f0, 0.45));
+  // Main sun — reduced to 0.65 so hexagon/grass detail is visible
+  const sun=new T.DirectionalLight(0xfff8e8, 0.65);
+  sun.position.set(40,60,30);
+  scene.add(sun);
+  // Soft fill from opposite side — very dim, just prevents pitch black shadows
+  const fill=new T.DirectionalLight(0x8ab4d4, 0.15);
+  fill.position.set(-30,15,-20);
+  scene.add(fill);
 }
 
 function buildPlayerMesh(){
