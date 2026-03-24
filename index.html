@@ -1754,7 +1754,7 @@ async function _startEngine(lobbyData){
   setLoad(50,'Building world...');
   const href2=window.location.href.split('?')[0].split('#')[0];
   const base2=href2.endsWith('/')?href2:href2.substring(0,href2.lastIndexOf('/')+1);
-  _loadGroundGLBs(base2,()=>{
+  _loadGroundTextures(base2,()=>{
     buildMap();buildPlayerMesh();buildGun();addLights();
     setLoad(65,'Loading enemy model...');
 
@@ -1810,7 +1810,7 @@ async function _startEngine(lobbyData){
     },380);
   }); // end loadPlayerModel callback
   }); // end loadEnemyModel callback
-  }); // end _loadGroundGLBs callback
+  }); // end _loadGroundTextures callback
 
   window.onresize=()=>{if(!renderer)return;renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();};
 }
@@ -1885,57 +1885,45 @@ function makeOnlineMesh(team){
   return g;
 }
 
-// ─── GLB TEXTURE MATERIALS (road.glb + field.glb) ────────────────────────────
-// These load the GLB models and extract their materials to use as ground textures.
-// The models themselves are not placed in the scene — only their textures are used.
-let _roadMat=null,  _fieldMat=null;
+// ─── GROUND TEXTURES — PNG (road.png 1008×1008, grass.png 1012×1012) ─────────
+let _roadMat=null, _fieldMat=null;
 
-function _loadGroundGLBs(base, onDone){
-  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+function _loadGroundTextures(base, onDone){
+  const loader=new T.TextureLoader();
   let loaded=0;
   const done=()=>{if(++loaded>=2)onDone();};
 
-  // road.glb — extract first mesh material, apply repeat tiling
-  fetch(base+'road.glb')
-    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
-    .then(buf=>{
-      new GLTFLoader().parse(buf,base,gltf=>{
-        gltf.scene.traverse(c=>{
-          if(c.isMesh&&c.material&&!_roadMat){
-            _roadMat=c.material.clone();
-            if(_roadMat.map){
-              _roadMat.map.wrapS=_roadMat.map.wrapT=T.RepeatWrapping;
-              _roadMat.map.repeat.set(4,4); // tile every 4 world units
-              _roadMat.map.needsUpdate=true;
-            }
-          }
-        });
-        console.log('✅ road.glb material extracted');
-        done();
-      },()=>done());
-    })
-    .catch(()=>done());
+  // road.png — 1008×1008px
+  // Each tile covers 4 world units so a 16-unit road needs repeat=4
+  loader.load(base+'road.png', tex=>{
+    tex.wrapS=tex.wrapT=T.RepeatWrapping;
+    tex.anisotropy=Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    // 1008px image at ~252px/world-unit → 1 tile = 4 world units
+    tex.repeat.set(4,4);
+    tex.needsUpdate=true;
+    _roadMat=new T.MeshLambertMaterial({map:tex});
+    console.log('✅ road.png loaded');
+    done();
+  }, undefined, ()=>{
+    // Fallback colour if PNG missing
+    _roadMat=new T.MeshLambertMaterial({color:0xc8b890});
+    done();
+  });
 
-  // field.glb — same approach
-  fetch(base+'field.glb')
-    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
-    .then(buf=>{
-      new GLTFLoader().parse(buf,base,gltf=>{
-        gltf.scene.traverse(c=>{
-          if(c.isMesh&&c.material&&!_fieldMat){
-            _fieldMat=c.material.clone();
-            if(_fieldMat.map){
-              _fieldMat.map.wrapS=_fieldMat.map.wrapT=T.RepeatWrapping;
-              _fieldMat.map.repeat.set(6,6);
-              _fieldMat.map.needsUpdate=true;
-            }
-          }
-        });
-        console.log('✅ field.glb material extracted');
-        done();
-      },()=>done());
-    })
-    .catch(()=>done());
+  // grass.png — 1012×1012px
+  // Each tile covers 6 world units so field disc (radius 56) looks natural
+  loader.load(base+'grass.png', tex=>{
+    tex.wrapS=tex.wrapT=T.RepeatWrapping;
+    tex.anisotropy=Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    tex.repeat.set(6,6);
+    tex.needsUpdate=true;
+    _fieldMat=new T.MeshLambertMaterial({map:tex});
+    console.log('✅ grass.png loaded');
+    done();
+  }, undefined, ()=>{
+    _fieldMat=new T.MeshLambertMaterial({color:0x4a7a30});
+    done();
+  });
 }
 
 // ─── MAP BUILD ───────────────────────────────────────────────────────────────
