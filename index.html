@@ -1752,11 +1752,11 @@ async function _startEngine(lobbyData){
   camera.position.copy(pPos);
 
   setLoad(50,'Building world...');
-  const href2=window.location.href.split('?')[0].split('#')[0];
-  const base2=href2.endsWith('/')?href2:href2.substring(0,href2.lastIndexOf('/')+1);
-  _loadGroundTextures(base2,()=>{
-    buildMap();buildPlayerMesh();buildGun();addLights();
-    setLoad(65,'Loading enemy model...');
+  // Textures load asynchronously in background — materials are created now
+  // so buildMap runs immediately without waiting
+  _initGroundMaterials();
+  buildMap();buildPlayerMesh();buildGun();addLights();
+  setLoad(65,'Loading enemy model...');
 
   loadEnemyModel(()=>{
     setLoad(72,'Loading player model...');
@@ -1782,7 +1782,6 @@ async function _startEngine(lobbyData){
       startTimer();
       setupControls();
       _attachInvListeners();
-      // Reset camera button label
       const cb=document.getElementById('camBtn');
       if(cb){cb.textContent='👁 3RD';cb.className='tp';}
       gameRunning=true;
@@ -1801,7 +1800,6 @@ async function _startEngine(lobbyData){
           if(!G.isPractice&&CUR_USER)pushMyPos(now);
           syncRemotePlayers();
         }
-        // Mixers ALWAYS update every frame (even when paused, so pose holds)
         if(playerGLBMixer)playerGLBMixer.update(dt);
         renderer.render(scene,camera);
         animId=requestAnimationFrame(loop);
@@ -1810,7 +1808,6 @@ async function _startEngine(lobbyData){
     },380);
   }); // end loadPlayerModel callback
   }); // end loadEnemyModel callback
-  }); // end _loadGroundTextures callback
 
   window.onresize=()=>{if(!renderer)return;renderer.setSize(window.innerWidth,window.innerHeight);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();};
 }
@@ -1885,45 +1882,41 @@ function makeOnlineMesh(team){
   return g;
 }
 
-// ─── GROUND TEXTURES — PNG (road.png 1008×1008, grass.png 1012×1012) ─────────
+
+// ─── GROUND MATERIALS — road.png + grass.png ─────────────────────────────────
+// road.png  : 1008×1008 px  →  tiles every 4 world units
+// grass.png : 1012×1012 px  →  tiles every 5 world units
+// Materials are created once when the engine starts.
+// No async waiting — textures stream in and update automatically.
 let _roadMat=null, _fieldMat=null;
 
-function _loadGroundTextures(base, onDone){
+function _initGroundMaterials(){
+  const href=window.location.href.split('?')[0].split('#')[0];
+  const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
   const loader=new T.TextureLoader();
-  let loaded=0;
-  const done=()=>{if(++loaded>=2)onDone();};
+  const maxAniso=Math.min(4,renderer.capabilities.getMaxAnisotropy());
 
-  // road.png — 1008×1008px
-  // Each tile covers 4 world units so a 16-unit road needs repeat=4
-  loader.load(base+'road.png', tex=>{
-    tex.wrapS=tex.wrapT=T.RepeatWrapping;
-    tex.anisotropy=Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    // 1008px image at ~252px/world-unit → 1 tile = 4 world units
-    tex.repeat.set(4,4);
-    tex.needsUpdate=true;
-    _roadMat=new T.MeshLambertMaterial({map:tex});
-    console.log('✅ road.png loaded');
-    done();
-  }, undefined, ()=>{
-    // Fallback colour if PNG missing
-    _roadMat=new T.MeshLambertMaterial({color:0xc8b890});
-    done();
-  });
+  // road.png
+  const roadTex=loader.load(base+'road.png',
+    tex=>{tex.needsUpdate=true;},
+    undefined,
+    ()=>console.warn('road.png not found — using colour fallback')
+  );
+  roadTex.wrapS=roadTex.wrapT=T.RepeatWrapping;
+  roadTex.repeat.set(4,4); // 1008px ÷ 252px/unit = 4 units per tile
+  roadTex.anisotropy=maxAniso;
+  _roadMat=new T.MeshLambertMaterial({map:roadTex, color:0xffffff});
 
-  // grass.png — 1012×1012px
-  // Each tile covers 6 world units so field disc (radius 56) looks natural
-  loader.load(base+'grass.png', tex=>{
-    tex.wrapS=tex.wrapT=T.RepeatWrapping;
-    tex.anisotropy=Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    tex.repeat.set(6,6);
-    tex.needsUpdate=true;
-    _fieldMat=new T.MeshLambertMaterial({map:tex});
-    console.log('✅ grass.png loaded');
-    done();
-  }, undefined, ()=>{
-    _fieldMat=new T.MeshLambertMaterial({color:0x4a7a30});
-    done();
-  });
+  // grass.png
+  const grassTex=loader.load(base+'grass.png',
+    tex=>{tex.needsUpdate=true;},
+    undefined,
+    ()=>console.warn('grass.png not found — using colour fallback')
+  );
+  grassTex.wrapS=grassTex.wrapT=T.RepeatWrapping;
+  grassTex.repeat.set(5,5); // 1012px ÷ ~202px/unit = 5 units per tile
+  grassTex.anisotropy=maxAniso;
+  _fieldMat=new T.MeshLambertMaterial({map:grassTex, color:0xffffff});
 }
 
 // ─── MAP BUILD ───────────────────────────────────────────────────────────────
@@ -1932,9 +1925,9 @@ function buildMap(){
   const CX=MAP_CX*CS, CZ=MAP_CZ*CS; // world center = 64,64
   const R=MAP_R*CS;   // circle radius in world units = 56
 
-  // ── SHARED MATERIALS — use GLB textures if loaded, else colour fallback ──
-  const mField  =_fieldMat || new T.MeshLambertMaterial({color:0x4a7a30});
-  const mRoad   =_roadMat  || new T.MeshLambertMaterial({color:0xc8b890});
+  // ── MATERIALS — PNG textures always ready (set by _initGroundMaterials) ──
+  const mField  =_fieldMat;   // grass.png tiled
+  const mRoad   =_roadMat;    // road.png tiled
   const mRoadMk =new T.MeshLambertMaterial({color:0xe8d4a0});
   const mCenter =new T.MeshLambertMaterial({color:0xd4c4a0}); // center plaza
   const mTower  =new T.MeshLambertMaterial({color:0x5a7090}); // tower base grey-blue
