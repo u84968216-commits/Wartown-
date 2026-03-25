@@ -506,6 +506,248 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 }
 #invBtn:active{background:rgba(255,107,53,.3);}
 /* Crosshair duplicate handled above */
+
+/* ══════════════════════════════════════════════════════════════
+   SOLO LEVELING SYSTEM UI  (image reference: blue sci-fi STATUS)
+   ══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+/* System button — above NADE button on right side */
+#systemBtn{
+  position:absolute;
+  bottom:calc(2vh + min(18vw,88px) + 1.5vh + min(10vw,48px) + 1vh);
+  right:1.5vw;
+  width:min(10vw,48px);height:min(10vw,48px);
+  border-radius:50%;
+  background:rgba(0,10,40,.85);
+  border:2px solid rgba(0,180,255,.6);
+  box-shadow:0 0 12px rgba(0,180,255,.4),inset 0 0 8px rgba(0,100,200,.2);
+  color:#00cfff;font-size:min(4vw,17px);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  cursor:pointer;touch-action:manipulation;pointer-events:all;
+  z-index:10;
+  -webkit-tap-highlight-color:transparent;
+}
+#systemBtn:active{box-shadow:0 0 20px rgba(0,180,255,.8);}
+#systemBtn span{font-size:5px;font-weight:800;color:rgba(0,200,255,.7);letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+
+/* System overlay — Solo Leveling STATUS panel */
+#systemOverlay{
+  position:fixed;inset:0;
+  display:none;align-items:center;justify-content:center;
+  z-index:850;
+  background:rgba(0,5,20,.88);
+  backdrop-filter:blur(8px);
+}
+#systemOverlay.open{display:flex;}
+.sys-panel{
+  width:min(92vw,520px);
+  background:linear-gradient(160deg,#020d1f 0%,#040f2a 60%,#020810 100%);
+  border:1px solid rgba(0,150,255,.35);
+  border-radius:4px;
+  box-shadow:0 0 40px rgba(0,100,255,.3),0 0 80px rgba(0,50,200,.15),
+             inset 0 0 30px rgba(0,30,80,.4);
+  padding:0;
+  position:relative;
+  overflow:hidden;
+}
+/* Corner brackets */
+.sys-panel::before,.sys-panel::after{
+  content:'';position:absolute;width:24px;height:24px;
+  border-color:rgba(0,200,255,.8);border-style:solid;
+}
+.sys-panel::before{top:6px;left:6px;border-width:2px 0 0 2px;}
+.sys-panel::after{bottom:6px;right:6px;border-width:0 2px 2px 0;}
+/* Scan line */
+.sys-panel-scan{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,100,255,.03) 3px,rgba(0,100,255,.03) 4px);
+  pointer-events:none;z-index:0;
+}
+.sys-title{
+  padding:14px 20px 10px;
+  text-align:center;
+  font-family:'Rajdhani',sans-serif;
+  font-size:22px;font-weight:700;
+  letter-spacing:8px;
+  color:#00cfff;
+  text-shadow:0 0 20px rgba(0,200,255,.8),0 0 40px rgba(0,150,255,.4);
+  border-bottom:1px solid rgba(0,150,255,.25);
+  position:relative;z-index:1;
+}
+.sys-row{
+  display:flex;justify-content:space-between;
+  padding:6px 24px;
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;
+  color:rgba(180,220,255,.6);letter-spacing:2px;
+  border-bottom:1px solid rgba(0,80,180,.15);
+  position:relative;z-index:1;
+}
+.sys-row-val{color:#00cfff;font-weight:700;}
+/* HP/MP bars */
+.sys-bars{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid rgba(0,120,255,.2);border-radius:2px;
+  margin:10px 20px;overflow:hidden;position:relative;z-index:1;
+}
+.sys-bar-cell{
+  padding:10px 14px;
+  background:rgba(0,10,40,.6);
+  border-right:1px solid rgba(0,100,255,.2);
+}
+.sys-bar-cell:last-child{border-right:none;}
+.sys-bar-icon{font-size:18px;margin-bottom:3px;}
+.sys-bar-label{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(0,200,255,.7);}
+.sys-bar-track{height:6px;background:rgba(0,50,100,.5);border-radius:3px;margin-top:5px;overflow:hidden;}
+.sys-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+.sys-bar-fill.hp{background:linear-gradient(90deg,#ff3355,#ff6680);}
+.sys-bar-fill.mp{background:linear-gradient(90deg,#0088ff,#00ccff);}
+/* Stats grid */
+.sys-stats{
+  display:grid;grid-template-columns:1fr 1fr;
+  margin:0 20px 10px;
+  border:1px solid rgba(0,120,255,.2);border-radius:2px;
+  overflow:hidden;position:relative;z-index:1;
+}
+.sys-stat-row{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  border-bottom:1px solid rgba(0,80,180,.15);
+  border-right:1px solid rgba(0,80,180,.15);
+}
+.sys-stat-row:nth-child(2n){border-right:none;}
+.sys-stat-ico{font-size:14px;width:20px;text-align:center;}
+.sys-stat-name{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(0,180,255,.7);flex:1;}
+.sys-stat-val{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#00cfff;}
+/* Coin display */
+.sys-coins{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:8px 20px 14px;
+  font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
+  color:#f0c040;
+  text-shadow:0 0 10px rgba(240,192,64,.5);
+  position:relative;z-index:1;
+}
+.sys-close{
+  position:absolute;top:8px;right:12px;
+  font-size:12px;font-weight:900;color:rgba(0,180,255,.5);
+  cursor:pointer;z-index:2;padding:4px 8px;
+  transition:color .2s;
+}
+.sys-close:hover,.sys-close:active{color:#00cfff;}
+
+/* ── COIN HUD badge (top center) ── */
+#coinHud{
+  position:absolute;top:5px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:4px;
+  background:rgba(0,5,20,.8);
+  border:1px solid rgba(240,192,64,.4);
+  border-radius:12px;padding:3px 10px;
+  font-size:11px;font-weight:800;color:#f0c040;
+  pointer-events:none;z-index:15;
+  text-shadow:0 0 8px rgba(240,192,64,.5);
+  white-space:nowrap;
+}
+
+/* ── COMPANION MESSAGE UI ── */
+#companion{
+  position:absolute;
+  bottom:calc(2vh + min(18vw,88px) + 12vh);
+  left:50%;transform:translateX(-50%);
+  width:min(70vw,300px);
+  pointer-events:none;z-index:30;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.comp-bubble{
+  background:rgba(0,5,20,.88);
+  border:1px solid rgba(0,180,255,.35);
+  border-radius:8px;
+  padding:6px 12px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:12px;font-weight:600;
+  color:#a0d8ff;
+  letter-spacing:.5px;
+  text-align:center;
+  max-width:100%;
+  animation:compFade 3.5s ease-out forwards;
+  box-shadow:0 0 10px rgba(0,100,255,.2);
+}
+.comp-bubble.warn{border-color:rgba(255,80,80,.5);color:#ffaaaa;}
+.comp-bubble.danger{border-color:rgba(255,40,40,.7);color:#ff6060;background:rgba(40,0,0,.9);}
+.comp-bubble.good{border-color:rgba(80,255,100,.4);color:#88ffaa;}
+@keyframes compFade{0%{opacity:0;transform:translateY(6px)}10%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0}}
+
+/* ── MERCHANT SHOP PANEL ── */
+#merchantP{
+  position:fixed;inset:0;
+  display:none;align-items:center;justify-content:center;
+  z-index:860;background:rgba(0,5,20,.92);backdrop-filter:blur(8px);
+}
+#merchantP.open{display:flex;}
+.merch-panel{
+  width:min(90vw,400px);
+  background:linear-gradient(160deg,#020d1f,#040f2a);
+  border:1px solid rgba(0,150,255,.4);border-radius:6px;
+  box-shadow:0 0 40px rgba(0,100,255,.25);
+  padding:0;overflow:hidden;
+}
+.merch-title{
+  padding:12px 18px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:18px;font-weight:700;letter-spacing:6px;
+  color:#00cfff;text-align:center;
+  border-bottom:1px solid rgba(0,150,255,.25);
+  background:rgba(0,20,60,.4);
+}
+.merch-coins-bar{
+  padding:8px 18px;font-family:'Rajdhani',sans-serif;
+  font-size:13px;font-weight:700;color:#f0c040;
+  border-bottom:1px solid rgba(0,80,180,.2);
+  display:flex;align-items:center;gap:6px;
+}
+.merch-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 18px;
+  border-bottom:1px solid rgba(0,80,180,.15);
+  transition:background .15s;
+}
+.merch-item:hover,.merch-item:active{background:rgba(0,40,100,.3);}
+.merch-item-ico{font-size:22px;width:32px;text-align:center;}
+.merch-item-info{flex:1;}
+.merch-item-name{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:#e0f0ff;letter-spacing:1px;}
+.merch-item-desc{font-size:10px;color:rgba(100,180,255,.6);margin-top:2px;}
+.merch-buy-btn{
+  background:linear-gradient(135deg,rgba(0,100,255,.6),rgba(0,60,180,.8));
+  border:1px solid rgba(0,180,255,.5);border-radius:6px;
+  color:#00cfff;font-family:'Rajdhani',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:1px;
+  padding:6px 12px;cursor:pointer;white-space:nowrap;
+  transition:all .15s;
+}
+.merch-buy-btn:active{background:rgba(0,180,255,.3);box-shadow:0 0 12px rgba(0,200,255,.5);}
+.merch-close{
+  display:block;width:100%;padding:10px;
+  background:rgba(0,10,40,.5);border:none;
+  font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;
+  color:rgba(0,160,255,.6);letter-spacing:2px;cursor:pointer;
+  transition:color .15s;
+}
+.merch-close:hover{color:#00cfff;}
+
+/* ── TOWER ENTRANCE PROMPT ── */
+#towerPrompt{
+  position:absolute;top:35%;left:50%;transform:translateX(-50%);
+  background:rgba(0,5,20,.9);
+  border:1px solid rgba(0,180,255,.5);border-radius:8px;
+  padding:8px 18px;
+  font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;
+  color:#00cfff;letter-spacing:2px;text-align:center;
+  pointer-events:none;z-index:25;
+  display:none;
+  box-shadow:0 0 16px rgba(0,150,255,.3);
+  animation:tpPulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes tpPulse{from{border-color:rgba(0,180,255,.3)}to{border-color:rgba(0,200,255,.8);}}
 </style>
 </head>
 <body>
@@ -650,12 +892,20 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
       <div class="abtn" id="nadeBtn" style="position:relative">💣<span>NADE</span><div class="nbadge" id="nb">2</div></div>
       <div class="abtn" id="jumpBtn">⬆<span>JUMP</span></div>
     </div>
+    <!-- System button above NADE -->
+    <div id="systemBtn" onclick="openSystem()">⚡<span>SYSTEM</span></div>
     <!-- Pause top-right -->
     <div id="pauseBtn">⏸</div>
     <!-- Inventory button top-left -->
     <div id="invBtn" onclick="openInventory()">🎒</div>
     <!-- Camera toggle button — bottom center -->
     <div id="camBtn" class="tp">👁 3RD</div>
+    <!-- Coin HUD -->
+    <div id="coinHud">🪙 <span id="coinVal">0</span></div>
+    <!-- Companion messages -->
+    <div id="companion"></div>
+    <!-- Tower entrance prompt -->
+    <div id="towerPrompt">[ TAP ] Enter Tower</div>
   </div>
   <div class="hflash" id="hflash"></div>
   <div class="knot" id="knot">ENEMY DOWN!</div>
@@ -688,7 +938,74 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
   </div>
 </div>
 
-<!-- PANELS -->
+<!-- ── SOLO LEVELING SYSTEM PANEL ── -->
+<div id="systemOverlay">
+  <div class="sys-panel">
+    <div class="sys-panel-scan"></div>
+    <div class="sys-close" onclick="closeSystem()">✕ CLOSE</div>
+    <div class="sys-title">S Y S T E M</div>
+    <div class="sys-row"><span>LEVEL</span><span class="sys-row-val" id="sysLvl">1</span><span>RANK</span><span class="sys-row-val" id="sysRank">E</span></div>
+    <div class="sys-row"><span>TITLE</span><span class="sys-row-val" id="sysTitle">Novice Hunter</span></div>
+    <div class="sys-bars">
+      <div class="sys-bar-cell">
+        <div class="sys-bar-icon">➕</div>
+        <div class="sys-bar-label">HP</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill hp" id="sysHpBar" style="width:100%"></div></div>
+      </div>
+      <div class="sys-bar-cell">
+        <div class="sys-bar-icon">✨</div>
+        <div class="sys-bar-label">MP</div>
+        <div class="sys-bar-track"><div class="sys-bar-fill mp" id="sysMpBar" style="width:75%"></div></div>
+      </div>
+    </div>
+    <div class="sys-stats">
+      <div class="sys-stat-row"><div class="sys-stat-ico">💪</div><div class="sys-stat-name">STR</div><div class="sys-stat-val" id="sysStr">10</div></div>
+      <div class="sys-stat-row"><div class="sys-stat-ico">❤️</div><div class="sys-stat-name">VIT</div><div class="sys-stat-val" id="sysVit">10</div></div>
+      <div class="sys-stat-row"><div class="sys-stat-ico">⚡</div><div class="sys-stat-name">AGI</div><div class="sys-stat-val" id="sysAgi">10</div></div>
+      <div class="sys-stat-row"><div class="sys-stat-ico">🧠</div><div class="sys-stat-name">INT</div><div class="sys-stat-val" id="sysInt">10</div></div>
+      <div class="sys-stat-row"><div class="sys-stat-ico">👁</div><div class="sys-stat-name">PER</div><div class="sys-stat-val" id="sysPer">10</div></div>
+      <div class="sys-stat-row"><div class="sys-stat-ico">🔵</div><div class="sys-stat-name">AP</div><div class="sys-stat-val" id="sysAp">0</div></div>
+    </div>
+    <div class="sys-coins">🪙 <span id="sysCoins">0</span> &nbsp; COINS</div>
+    <div style="padding:0 20px 14px;display:flex;gap:8px;position:relative;z-index:1;">
+      <button onclick="openMerchant()" style="flex:1;background:linear-gradient(135deg,rgba(0,100,255,.5),rgba(0,60,180,.7));border:1px solid rgba(0,180,255,.5);border-radius:4px;color:#00cfff;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;padding:9px;cursor:pointer;">🛒 SHOP</button>
+      <button onclick="closeSystem()" style="flex:1;background:rgba(0,10,40,.6);border:1px solid rgba(0,100,255,.3);border-radius:4px;color:rgba(0,160,255,.7);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;padding:9px;cursor:pointer;">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MERCHANT SHOP PANEL ── -->
+<div id="merchantP">
+  <div class="merch-panel">
+    <div class="merch-title">⚔ MERCHANT</div>
+    <div class="merch-coins-bar">🪙 <span id="merchCoins">0</span> coins available</div>
+    <div class="merch-item">
+      <div class="merch-item-ico">🔨</div>
+      <div class="merch-item-info">
+        <div class="merch-item-name">HAMMER</div>
+        <div class="merch-item-desc">Destroy enemy statues · DMG 150 · One-hit statue</div>
+      </div>
+      <button class="merch-buy-btn" onclick="buyHammer()">10 🪙</button>
+    </div>
+    <div class="merch-item">
+      <div class="merch-item-ico">💊</div>
+      <div class="merch-item-info">
+        <div class="merch-item-name">HEALTH KIT</div>
+        <div class="merch-item-desc">Restore 50 HP instantly</div>
+      </div>
+      <button class="merch-buy-btn" onclick="buyHealthKit()">5 🪙</button>
+    </div>
+    <div class="merch-item">
+      <div class="merch-item-ico">💨</div>
+      <div class="merch-item-info">
+        <div class="merch-item-name">SPEED BOOST</div>
+        <div class="merch-item-desc">+50% movement speed for 15s</div>
+      </div>
+      <button class="merch-buy-btn" onclick="buySpeedBoost()">8 🪙</button>
+    </div>
+    <button class="merch-close" onclick="closeMerchant()">✕ LEAVE SHOP</button>
+  </div>
+</div>
 <div class="pov" id="settingsP"><div class="pan">
   <div class="ph"><div class="pt">⚙️ Settings</div><button class="xb" onclick="closeP('settingsP')">✕</button></div>
   <div class="srow"><div class="slbl">🔊 Sound</div><input type="range" min="0" max="100" value="80" oninput="this.nextElementSibling.textContent=this.value+'%'"><div class="sval">80%</div></div>
@@ -1096,6 +1413,8 @@ const G={
   sens:5,joyX:0,joyY:0,myTeam:'blue',
   isPractice:false,botCount:4,botDiff:'medium',
   camMode:'third',
+  coins:0,        // in-game coins (bot kill=2, player kill=5)
+  hasHammer:false,// bought hammer from merchant
 };
 
 const WD={
@@ -1109,6 +1428,7 @@ const WD={
   Desert: {dmg:55, rof:400,  ammo:7,  res:28,  spread:.025, name:'Desert Eagle',   icon:'🔫', slot:'light'},
   Revolver:{dmg:70,rof:600,  ammo:6,  res:18,  spread:.018, name:'Revolver',       icon:'🔫', slot:'light'},
   Knife:  {dmg:45, rof:400,  ammo:1,  res:999, spread:.000, name:'Knife',          icon:'🗡️', slot:'melee'},
+  Hammer: {dmg:150,rof:800,  ammo:1,  res:999, spread:.000, name:'Hammer',         icon:'🔨', slot:'melee',  price:10, destroysStatue:true},
 };
 
 // ─── CIRCULAR MAP ─────────────────────────────────────────────────────────────
@@ -1752,9 +2072,12 @@ async function _startEngine(lobbyData){
   camera.position.copy(pPos);
 
   setLoad(50,'Building world...');
-  // Textures load asynchronously in background — materials are created now
-  // so buildMap runs immediately without waiting
+  const href2=window.location.href.split('?')[0].split('#')[0];
+  const base2=href2.endsWith('/')?href2:href2.substring(0,href2.lastIndexOf('/')+1);
+  // Textures (non-blocking)
   _initGroundMaterials();
+  // Load ghost.glb for statues (non-blocking — falls back gracefully)
+  _loadGhostGLB(base2,()=>{});
   buildMap();buildPlayerMesh();buildGun();addLights();
   setLoad(65,'Loading enemy model...');
 
@@ -1795,6 +2118,9 @@ async function _startEngine(lobbyData){
           tickGrens(dt);
           tickParticles(dt);
           tickOcean(now);
+          tickCompanion(dt);
+          tickBoosts(dt);
+          _checkTowerProximity();
           updateMM();
           updateCulling();
           if(!G.isPractice&&CUR_USER)pushMyPos(now);
@@ -2086,16 +2412,12 @@ function buildMap(){
     const antGeo=new T.SphereGeometry(.18,6,4);
     const antMesh=new T.Mesh(antGeo,new T.MeshBasicMaterial({color:td.color}));
     antMesh.position.set(td.x,8.9,td.z); scene.add(antMesh);
-    // Statue Core — glowing orb on top of tower
-    const statueGeo=new T.SphereGeometry(0.9,10,8);
-    const statueMat=new T.MeshBasicMaterial({color:td.color,transparent:true,opacity:.85});
-    const statueMesh=new T.Mesh(statueGeo,statueMat);
-    statueMesh.position.set(td.x,5.5,td.z);
-    statueMesh.name='statue_'+td.team;
-    statueMesh._team=td.team;
-    statueMesh._alive=true;
-    scene.add(statueMesh);
-    // Statue glow ring
+    // Register tower zone for entrance detection
+    _towerZones.push({cx:td.x,cz:td.z,r:8,team:td.team});
+
+    // Statue Core — load ghost.glb if available, else glowing orb fallback
+    // (ghost.glb loaded separately; _placeFallbackStatue used until then)
+    _placeFallbackStatue(td.x,5.5,td.z,td.color);
     const sgGeo=new T.TorusGeometry(1.4,.12,8,20);
     const sgMat=new T.MeshBasicMaterial({color:td.color,transparent:true,opacity:.5});
     const sgMesh=new T.Mesh(sgGeo,sgMat);
@@ -2607,7 +2929,7 @@ function movePlayer(dt){
   if(il>0.01){inX/=il;inZ/=il;}
 
   // ── Smooth acceleration/deceleration (like Free Fire) ────────────────────
-  const maxSpd=(G.isAiming?2.6:5.8)*dt;
+  const maxSpd=(G.isAiming?2.6:5.8)*(G.hasSpeedBoost?1.5:1)*dt;
   if(il>0.01){
     velX+=(inX*maxSpd-velX)*0.38; // accelerate toward input
     velZ+=(inZ*maxSpd-velZ)*0.38;
@@ -2877,6 +3199,8 @@ function fireOnce(){
         setTimeout(()=>{if(scene&&bestBot.mesh){scene.remove(bestBot.mesh);bestBot.mesh=null;}},3000);
       }
       G.kills++;G.scoreBlue++;updateHUD();showKillFx();addKF('You','Bot');
+      earnCoins(2); // bot kill = 2 coins
+      compMsg(COMPANION_MSGS.botKill,true);
       giveXP(50);
       if(bots.every(b=>!b.alive))setTimeout(()=>{respawnBots();updateHUD();},5000);
     }
@@ -2889,7 +3213,10 @@ function fireOnce(){
     if(checkHit(p.x,p.y+0.9,p.z,0.6)){
       const dmg=wd.dmg*(G.isAiming?1.22:1);
       MATCH_REF?.child('dmg/'+uid).push({d:Math.floor(dmg),from:CUR_USER?.uid});
-      showDmgNum(Math.floor(dmg));G.kills++;G.scoreBlue++;updateHUD();showKillFx();addKF('You',op.data?.name||'Player');giveXP(80);
+      showDmgNum(Math.floor(dmg));G.kills++;G.scoreBlue++;updateHUD();showKillFx();addKF('You',op.data?.name||'Player');
+      earnCoins(5); // player kill = 5 coins
+      compMsg(COMPANION_MSGS.playerKill,true);
+      giveXP(80);
     }
   });
 
@@ -3383,6 +3710,238 @@ function _goLobbyNow(){
   ref.child('status').set('waiting');
   listenLobby();
   showScr('lobbyScreen');
+}
+
+// ─── COMPANION AI ─────────────────────────────────────────────────────────────
+const COMPANION_MSGS={
+  lowHp:      [{text:'⚠ HP critical — find cover!',cls:'danger'},{text:'🩸 You are badly hurt!',cls:'danger'}],
+  enemyClose: [{text:'👁 Enemy nearby!',cls:'warn'},{text:'⚠ Contact detected!',cls:'warn'}],
+  botKill:    [{text:'✅ Target eliminated. +2 coins',cls:'good'},{text:'🎯 Nice shot! +2 coins',cls:'good'}],
+  playerKill: [{text:'🏆 Player down! +5 coins',cls:'good'}],
+  noAmmo:     [{text:'🔴 Out of ammo — reload!',cls:'warn'}],
+  entering:   [{text:'🏰 Entering tower zone',cls:'good'}],
+  statueDestroyed:[{text:'💀 Our statue is destroyed — no respawn!',cls:'danger'}],
+  enemyStatue:[{text:'💥 Enemy statue destroyed!',cls:'good'}],
+  waveIncoming:[{text:'⚡ New enemies approaching!',cls:'warn'}],
+  botsLeft:   (n)=>[{text:`👾 ${n} enemies remaining`,cls:''}],
+  merchant:   [{text:'🛒 Merchant nearby — tap SYSTEM to shop',cls:'good'}],
+  speedBoost: [{text:'💨 Speed boost active!',cls:'good'}],
+};
+let _lastCompMsg='', _compCooldown=0;
+
+function compMsg(msgArr, force=false){
+  if(!G.matchActive)return;
+  if(!Array.isArray(msgArr))msgArr=msgArr(0);
+  const m=msgArr[Math.floor(Math.random()*msgArr.length)];
+  if(m.text===_lastCompMsg&&!force)return;
+  _lastCompMsg=m.text;
+  const el=document.createElement('div');
+  el.className='comp-bubble'+(m.cls?' '+m.cls:'');
+  el.textContent=m.text;
+  const c=document.getElementById('companion');
+  if(!c)return;
+  c.appendChild(el);
+  // Remove old messages (keep max 2)
+  while(c.children.length>2)c.removeChild(c.firstChild);
+  setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3600);
+}
+
+let _compTimer=0;
+function tickCompanion(dt){
+  _compTimer+=dt;
+  if(_compTimer<4)return; // check every 4 seconds
+  _compTimer=0;
+  if(!pPos||!G.matchActive)return;
+
+  // HP check
+  if(pHealth<30)compMsg(COMPANION_MSGS.lowHp);
+  // Ammo check
+  else if(G.ammo===0)compMsg(COMPANION_MSGS.noAmmo);
+
+  // Enemy proximity check
+  const nearBot=bots.some(b=>b.alive&&Math.hypot(b.x-pPos.x,b.z-pPos.z)<12);
+  if(nearBot)compMsg(COMPANION_MSGS.enemyClose);
+
+  // Bots remaining
+  const alive=bots.filter(b=>b.alive).length;
+  if(alive<=2&&alive>0)compMsg(COMPANION_MSGS.botsLeft(alive));
+
+  // Merchant proximity
+  const CX=MAP_CX*CS,CZ=MAP_CZ*CS;
+  if(Math.hypot(pPos.x-CX,pPos.z-CZ)<14)compMsg(COMPANION_MSGS.merchant);
+}
+
+// ─── COIN SYSTEM ──────────────────────────────────────────────────────────────
+function earnCoins(n){
+  G.coins+=n;
+  document.getElementById('coinVal').textContent=G.coins;
+  document.getElementById('sysCoins').textContent=G.coins;
+  document.getElementById('merchCoins').textContent=G.coins;
+  // Save to DB if online
+  if(CUR_USER&&!G.isPractice)
+    db.ref('users/'+CUR_USER.uid+'/coins').transaction(c=>(c||0)+n);
+}
+
+function updateCoinHud(){
+  document.getElementById('coinVal').textContent=G.coins;
+  document.getElementById('sysCoins').textContent=G.coins;
+  document.getElementById('merchCoins').textContent=G.coins;
+}
+
+// ─── SYSTEM PANEL (Solo Leveling) ─────────────────────────────────────────────
+const RANKS=['E','D','C','B','A','S','SS','SSS'];
+const TITLES=['Novice Hunter','Apprentice','Fighter','Knight','Elite','Master','Grand Master','Shadow Monarch'];
+
+function openSystem(){
+  const lvl=UD.level||1;
+  document.getElementById('sysLvl').textContent=lvl;
+  document.getElementById('sysRank').textContent=RANKS[Math.min(Math.floor((lvl-1)/3),7)];
+  document.getElementById('sysTitle').textContent=TITLES[Math.min(Math.floor((lvl-1)/3),7)];
+  document.getElementById('sysStr').textContent=10+G.kills*2;
+  document.getElementById('sysVit').textContent=10+Math.floor(pHealth/10);
+  document.getElementById('sysAgi').textContent=10+(G.hasSpeedBoost?5:0);
+  document.getElementById('sysInt').textContent=10+(UD.level||1);
+  document.getElementById('sysPer').textContent=10+bots.filter(b=>b.alive).length;
+  document.getElementById('sysAp').textContent=Math.max(0,(UD.level||1)-1)*3;
+  document.getElementById('sysHpBar').style.width=Math.max(0,pHealth)+'%';
+  document.getElementById('sysCoins').textContent=G.coins;
+  document.getElementById('systemOverlay').classList.add('open');
+  G.isPaused=true; stopShooting();
+}
+function closeSystem(){
+  document.getElementById('systemOverlay').classList.remove('open');
+  G.isPaused=false;
+}
+
+// ─── MERCHANT SHOP ────────────────────────────────────────────────────────────
+function openMerchant(){
+  closeSystem();
+  updateCoinHud();
+  document.getElementById('merchantP').classList.add('open');
+  G.isPaused=true;
+}
+function closeMerchant(){
+  document.getElementById('merchantP').classList.remove('open');
+  G.isPaused=false;
+}
+
+function buyHammer(){
+  if(G.coins<10){compMsg([{text:'🪙 Not enough coins! Need 10',cls:'warn'}],true);return;}
+  if(G.hasHammer){compMsg([{text:'🔨 You already have a Hammer',cls:''}],true);return;}
+  G.coins-=10; updateCoinHud();
+  G.hasHammer=true;
+  G.meleeWeapon='Hammer';
+  toast('🔨 Hammer acquired! Destroy enemy statues!');
+  compMsg([{text:'🔨 Hammer equipped — destroy statues!',cls:'good'}],true);
+  renderInventorySlots();
+  closeMerchant();
+}
+
+function buyHealthKit(){
+  if(G.coins<5){compMsg([{text:'🪙 Need 5 coins for Health Kit',cls:'warn'}],true);return;}
+  G.coins-=5; updateCoinHud();
+  pHealth=Math.min(100,pHealth+50);
+  updateHUD();
+  toast('💊 +50 HP restored!');
+  closeMerchant();
+}
+
+let G_speedBoostTimer=0;
+G.hasSpeedBoost=false;
+function buySpeedBoost(){
+  if(G.coins<8){compMsg([{text:'🪙 Need 8 coins for Speed Boost',cls:'warn'}],true);return;}
+  G.coins-=8; updateCoinHud();
+  G.hasSpeedBoost=true;
+  G_speedBoostTimer=15;
+  toast('💨 Speed boost active for 15s!');
+  compMsg(COMPANION_MSGS.speedBoost,true);
+  closeMerchant();
+}
+
+// ─── GHOST.GLB STATUE LOADER ──────────────────────────────────────────────────
+let _ghostBuffer=null;
+function _loadGhostGLB(base, onDone){
+  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+  if(!GLTFLoader){onDone(null);return;}
+  fetch(base+'ghost.glb')
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject('not found'))
+    .then(buf=>{_ghostBuffer=buf;onDone(buf);})
+    .catch(()=>onDone(null));
+}
+
+function _placeGhostStatue(x,y,z,teamColor){
+  if(!_ghostBuffer||!T){return _placeFallbackStatue(x,y,z,teamColor);}
+  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+  if(!GLTFLoader){return _placeFallbackStatue(x,y,z,teamColor);}
+  const href=window.location.href.split('?')[0].split('#')[0];
+  const base=href.endsWith('/')?href:href.substring(0,href.lastIndexOf('/')+1);
+  new GLTFLoader().parse(_ghostBuffer.slice(0),base,gltf=>{
+    const mdl=gltf.scene;
+    mdl.traverse(c=>{
+      if(c.isMesh){
+        c.castShadow=false;c.receiveShadow=false;c.frustumCulled=false;
+        if(c.material){
+          const mc=c.material.clone();
+          mc.emissive=new T.Color(teamColor);
+          mc.emissiveIntensity=0.3;
+          mc.side=T.DoubleSide;
+          c.material=mc;
+        }
+      }
+    });
+    // Scale to ~2.5m
+    const box=new T.Box3().setFromObject(mdl);
+    const sz=box.getSize(new T.Vector3());
+    const tall=Math.max(sz.x,sz.y,sz.z);
+    if(tall>0){const sc=2.5/tall;mdl.scale.set(sc,sc,sc);}
+    const box2=new T.Box3().setFromObject(mdl);
+    mdl.position.y-=box2.min.y;
+    const g=new T.Group();g.add(mdl);
+    g.position.set(x,y,z);
+    scene.add(g);
+    return g;
+  },()=>_placeFallbackStatue(x,y,z,teamColor));
+}
+
+function _placeFallbackStatue(x,y,z,col){
+  const g=new T.Group();
+  const body=new T.Mesh(new T.CapsuleGeometry?new T.CapsuleGeometry(.4,1.2,4,8):new T.CylinderGeometry(.35,.35,1.6,8),
+    new T.MeshBasicMaterial({color:col,transparent:true,opacity:.85}));
+  body.position.y=1.8;g.add(body);
+  const halo=new T.Mesh(new T.TorusGeometry(0.7,.06,6,18),
+    new T.MeshBasicMaterial({color:col,transparent:true,opacity:.5}));
+  halo.rotation.x=Math.PI/2;halo.position.y=3.6;g.add(halo);
+  g.position.set(x,y,z);scene.add(g);return g;
+}
+
+// ─── TOWER ENTRANCE SYSTEM ────────────────────────────────────────────────────
+let _towerZones=[]; // [{cx,cz,r,team}] — populated in buildMap
+
+function _checkTowerProximity(){
+  if(!pPos||!G.matchActive)return;
+  let inTower=false;
+  for(const tz of _towerZones){
+    if(Math.hypot(pPos.x-tz.cx,pPos.z-tz.cz)<tz.r){
+      inTower=true;
+      document.getElementById('towerPrompt').style.display='block';
+      // If player has hammer and this is enemy tower, offer statue destruction
+      if(G.hasHammer&&tz.team!==G.myTeam){
+        document.getElementById('towerPrompt').textContent='🔨 TAP to destroy Statue (Hammer)';
+      } else {
+        document.getElementById('towerPrompt').textContent='🏰 Inside '+tz.team.toUpperCase()+' Tower';
+      }
+      break;
+    }
+  }
+  if(!inTower)document.getElementById('towerPrompt').style.display='none';
+}
+
+// ─── SPEED BOOST TICK ─────────────────────────────────────────────────────────
+function tickBoosts(dt){
+  if(G.hasSpeedBoost){
+    G_speedBoostTimer-=dt;
+    if(G_speedBoostTimer<=0){G.hasSpeedBoost=false;toast('💨 Speed boost ended');}
+  }
 }
 
 function doLogout(){
