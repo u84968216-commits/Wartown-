@@ -381,7 +381,7 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 .knot{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:900;color:#ffdd22;text-transform:uppercase;letter-spacing:4px;pointer-events:none;z-index:700;opacity:0;text-shadow:0 2px 10px rgba(255,200,0,.4);}
 .knot.show{animation:kn 1.5s ease-out;}
 @keyframes kn{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}55%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
-.rov{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:500;}
+.rov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;flex-direction:column;gap:0;z-index:500;overflow:hidden;}
 .rov.show{display:flex;}
 .rt{font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:4px;}
 .rc{font-size:60px;font-weight:900;color:#ff6b35;text-shadow:0 0 30px rgba(255,107,53,.5);}
@@ -575,8 +575,9 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 .trade-slot-count{font-size:clamp(6px,1.5vw,7.5px);font-weight:700;color:#f0c040;margin-top:1px;}
 .trade-arrow{font-size:clamp(8px,2.1vw,11px);color:rgba(192,152,52,.52);flex:1;text-align:center;}
 .trade-buy-btn{margin-left:auto;padding:clamp(4px,1vh,6px) clamp(7px,2.2vw,11px);background:linear-gradient(135deg,rgba(145,90,0,.66),rgba(110,62,0,.86));border:1px solid rgba(208,150,35,.45);border-radius:4px;color:#f0d060;font-family:'Rajdhani',sans-serif;font-size:clamp(9px,2.4vw,11px);font-weight:700;letter-spacing:.7px;cursor:pointer;white-space:nowrap;transition:filter .12s;}
-.trade-buy-btn:active{filter:brightness(1.45);}
+.trade-buy-btn:active{filter:brightness(1.45);transform:scale(.93);}
 .trade-buy-btn:disabled{opacity:.36;cursor:not-allowed;}
+.trade-buy-btn{transition:filter .12s, transform .1s;}
 .merch-close{display:block;width:100%;padding:clamp(7px,1.5vh,9px);background:rgba(0,0,0,.26);border:none;border-top:1px solid rgba(90,62,16,.26);font-family:'Rajdhani',sans-serif;font-size:clamp(9px,2.6vw,11px);font-weight:700;color:rgba(188,142,45,.55);letter-spacing:1.6px;cursor:pointer;}
 .merch-close:active{color:#f0c040;}
 
@@ -763,7 +764,15 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
   </div>
   <div class="hflash" id="hflash"></div>
   <div class="knot" id="knot">ENEMY DOWN!</div>
-  <div class="rov" id="rov"><div class="rt">Eliminated</div><div class="rc" id="rc">3</div></div>
+  <div class="rov" id="rov">
+    <img src="higuruma.gif" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.55;pointer-events:none;">
+    <div style="position:relative;z-index:1;text-align:center;">
+      <div class="rt" style="font-size:clamp(18px,5vw,28px);letter-spacing:3px;margin-bottom:4px;">YOU GOT COOKED 💀</div>
+      <div style="font-size:clamp(10px,2.5vw,13px);color:rgba(255,200,100,.7);margin-bottom:8px;font-weight:600;letter-spacing:1px;">Respawning in...</div>
+      <div class="rc" id="rc" style="font-size:clamp(52px,16vw,88px);">6</div>
+      <div id="rcFunny" style="font-size:clamp(10px,2.5vw,12px);color:rgba(255,150,100,.8);margin-top:6px;font-weight:600;letter-spacing:.5px;"></div>
+    </div>
+  </div>
   <div class="eov" id="eov">
     <div class="etit" id="etit">VICTORY!</div>
     <div class="estats"><div class="estat"><div class="esv" id="eK">0</div><div class="esl">Kills</div></div><div class="estat"><div class="esv" id="eD">0</div><div class="esl">Deaths</div></div><div class="estat"><div class="esv" id="eA">0</div><div class="esl">Assists</div></div></div>
@@ -839,7 +848,7 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
         <div class="merch-item-name">HAMMER</div>
         <div class="merch-item-desc">Destroy enemy statues · DMG 150 · One-hit statue</div>
       </div>
-      <button class="merch-buy-btn" onclick="buyHammer()">10 🪙</button>
+      <button class="merch-buy-btn" id="hammerBtn" onclick="buyHammer()">TRADE</button>
     </div>
     <div class="merch-item">
       <div class="merch-item-ico">💊</div>
@@ -1946,6 +1955,8 @@ async function _startEngine(lobbyData){
   function _doStartGame(){
     setTimeout(()=>{
       buildMap(); buildPlayerMesh(); buildGun(); addLights();
+    // Load GLB gun models async (non-blocking — replaces procedural guns when ready)
+    _loadGunGLBs(base2);
       setLoad(65,'Loading models...');
       loadEnemyModel(()=>{
         setLoad(75,'Loading player...');
@@ -1992,6 +2003,7 @@ async function _startEngine(lobbyData){
               syncRemotePlayers();
             }
             if(playerGLBMixer)playerGLBMixer.update(dt);
+        if(gunGroup&&gunGroup._mixer)gunGroup._mixer.update(dt);
             renderer.render(scene,camera);
             animId=requestAnimationFrame(loop);
           }
@@ -2395,14 +2407,13 @@ function buildMap(){
     top.position.set(px,h+1,pz2);scene.add(top);
   });
 
-  // 11. CRATES — climbable + solid (Box.png texture)
+  // 11. CRATES — solid sides, climbable top (Box.png texture)
   [[CX-10,CZ-2],[CX+10,CZ-2],[CX-2,CZ-10],[CX+2,CZ+10],[CX-22,CZ-2],[CX+22,CZ-2]
   ].forEach(([px,pz2])=>{
     const ry=Math.random()*.8;
-    // Solid walls
-    _addWall(px,pz2,.6,.6,1.0);
-    // Climbable top surface
-    _addStep(px,pz2,.6,.6,1.0);
+    // Only register as climbable step — player can walk UP onto crate
+    // Sides block via the step auto-raise system, not a hard wall
+    _addStep(px,pz2,.55,.55,1.0); // top surface at y=1.0
     const cm=new T.Mesh(new T.BoxGeometry(1.2,1,1.2),mCrate);
     cm.position.set(px,.5,pz2);cm.rotation.y=ry;scene.add(cm);
   });
@@ -2491,7 +2502,7 @@ function _placeMerchantCharacter(x,z){
         const g=new T.Group();
         g.add(mdl);
         g.position.set(x,.005,z);
-        g.rotation.y=Math.PI; // face entrance
+        g.rotation.y=0; // face south toward the entrance (player comes from south)
         sc.add(g);
         _merchantMesh=g;
         console.log('✅ ghost.glb merchant placed');
@@ -2538,7 +2549,7 @@ function _buildFallbackMerchant(x,z,sc){
   armR.rotation.z=Math.PI/3; armR.position.set(.38,.98,0);g.add(armR);
 
   g.position.set(x,.005,z);
-  g.rotation.y=Math.PI;
+  g.rotation.y=0; // face toward entrance
   sc.add(g);
   _merchantMesh=g;
   console.log('✅ Fallback merchant placed');
@@ -2626,6 +2637,78 @@ function buildPlayerMesh(){
   g._animT=0;
   playerMesh=g;
   scene.add(playerMesh);
+}
+
+// ─── GUN GLB MODELS ──────────────────────────────────────────────────────────
+let _gunGLBs={}; // cache: {ar: gltf, desert: gltf}
+
+function _loadGunGLBs(base){
+  const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
+  if(!GLTFLoader)return;
+  // gun.glb → used for AR (starting gun)
+  fetch(base+'gun.glb')
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
+    .then(buf=>new GLTFLoader().parse(buf,base,gltf=>{
+      _gunGLBs.ar=gltf;
+      console.log('✅ gun.glb loaded');
+      // If player is using AR right now, rebuild gun with GLB model
+      if(G.primaryWeapon==='AR'&&gunGroup)_replaceGunWithGLB('ar');
+    },()=>{}))
+    .catch(()=>console.warn('gun.glb not found'));
+
+  // eagle_gun.glb → Desert Eagle
+  fetch(base+'eagle_gun.glb')
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
+    .then(buf=>new GLTFLoader().parse(buf,base,gltf=>{
+      _gunGLBs.desert=gltf;
+      console.log('✅ eagle_gun.glb loaded');
+      if(G.primaryWeapon==='Desert'&&gunGroup)_replaceGunWithGLB('desert');
+    },()=>{}))
+    .catch(()=>console.warn('eagle_gun.glb not found'));
+}
+
+function _replaceGunWithGLB(key){
+  const gltf=_gunGLBs[key];
+  if(!gltf||!camera||!gunGroup)return;
+  // Remove old procedural gun children (keep muzzleFlash + muzzleLight)
+  const toRemove=[];
+  gunGroup.children.forEach(c=>{
+    if(c!==muzzleFlash&&c!==muzzleLight)toRemove.push(c);
+  });
+  toRemove.forEach(c=>gunGroup.remove(c));
+
+  const mdl=gltf.scene.clone?gltf.scene.clone():gltf.scene;
+  mdl.traverse(c=>{
+    if(!c.isMesh)return;
+    c.frustumCulled=false;
+    if(c.material){
+      const mc=c.material.clone();mc.side=T.DoubleSide;c.material=mc;
+    }
+  });
+  // Scale to fit in view — gun models vary widely
+  const bb=new T.Box3().setFromObject(mdl);
+  const sz=bb.getSize(new T.Vector3());
+  const longest=Math.max(sz.x,sz.y,sz.z)||1;
+  const sc=0.45/longest; // target ~0.45 world units long
+  mdl.scale.set(sc,sc,sc);
+  // Re-centre
+  const bb2=new T.Box3().setFromObject(mdl);
+  const ctr=bb2.getCenter(new T.Vector3());
+  mdl.position.sub(ctr);
+  gunGroup.add(mdl);
+
+  // Setup animation mixer if GLB has clips
+  if(gltf.animations&&gltf.animations.length>0){
+    const mixer=new T.AnimationMixer(mdl);
+    const idleClip=T.AnimationClip.findByName(gltf.animations,'idle')||gltf.animations[0];
+    const idleAction=mixer.clipAction(idleClip);
+    idleAction.setLoop(T.LoopRepeat,Infinity);
+    idleAction.setEffectiveWeight(1);
+    idleAction.play();
+    // Tick this mixer in the game loop
+    gunGroup._mixer=mixer;
+    gunGroup._clips=gltf.animations;
+  }
 }
 
 function buildGun(){
@@ -2987,27 +3070,28 @@ function movePlayer(dt){
   let highestFloor=GROUND_Y; // find tallest surface player is standing on
 
   for(const col of _colliders){
-    const dx=Math.abs(nx-col.x)-col.hw-PR;
-    const dz=Math.abs(pPos.z-col.z)-col.hd-PR;
-    const dxZ=Math.abs(pPos.x-col.x)-col.hw-PR;
-    const dzZ=Math.abs(nz-col.z)-col.hd-PR;
-
-    // Is player at the right height to interact with this collider?
-    const playerBottom=pPos.y-GROUND_Y;
-    const playerTop=pPos.y+0.5;
+    const playerBottom=pPos.y-GROUND_Y; // height above absolute ground
+    const playerTop=pPos.y+1.0;
 
     if(col.stair){
-      // Stair/climbable: if inside XZ footprint, raise floor
-      const inX=Math.abs(pPos.x-col.x)<col.hw+PR+0.1;
-      const inZ=Math.abs(pPos.z-col.z)<col.hd+PR+0.1;
-      if(inX&&inZ&&col.floorY>highestFloor&&col.floorY<pPos.y+0.8){
+      // Climbable surface: raise player's floor if inside XZ footprint
+      // and the surface is reachable (within 1.2 units above current feet)
+      const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.05;
+      const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.05;
+      if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.2){
         highestFloor=col.floorY;
       }
     } else {
-      // Solid wall/block — block movement if overlapping vertically
-      if(playerBottom<col.h&&playerTop>0){
-        if(dx<0&&dz<0)canMoveX=false;
-        if(dxZ<0&&dzZ<0)canMoveZ=false;
+      // Solid wall: block XZ movement only when player vertically overlaps
+      // Player feet are at pPos.y-GROUND_Y (relative to world 0)
+      // Block if player's body overlaps the collider height
+      if(playerBottom<col.h&&playerTop>0.05){
+        const dxTest=Math.abs(nx-col.x)-col.hw-PR;
+        const dzTest=Math.abs(pPos.z-col.z)-col.hd-PR;
+        if(dxTest<0&&dzTest<0)canMoveX=false;
+        const dxTestZ=Math.abs(pPos.x-col.x)-col.hw-PR;
+        const dzTestZ=Math.abs(nz-col.z)-col.hd-PR;
+        if(dxTestZ<0&&dzTestZ<0)canMoveZ=false;
       }
     }
   }
@@ -3453,10 +3537,23 @@ function playerHit(dmg){
 }
 function playerDied(){
   G.deaths++;G.matchActive=false;stopShooting();
-  const ov=document.getElementById('rov');ov.classList.add('show');
-  let c=3;document.getElementById('rc').textContent=c;
+  const ov=document.getElementById('rov');
+  ov.classList.add('show');
+  const funnyMsgs=[
+    '💀 Get rekt, try again',
+    '😂 Maybe aim next time?',
+    '🤣 Skill issue detected',
+    '💅 Back on your feet bestie',
+    '🫡 Respawning warrior...',
+    '😤 Touch grass then respawn',
+  ];
+  let c=6;
+  document.getElementById('rc').textContent=c;
+  document.getElementById('rcFunny').textContent=funnyMsgs[Math.floor(Math.random()*funnyMsgs.length)];
   const ri=setInterval(()=>{
-    c--;document.getElementById('rc').textContent=c;
+    c--;
+    document.getElementById('rc').textContent=c;
+    if(c===3)document.getElementById('rcFunny').textContent=funnyMsgs[Math.floor(Math.random()*funnyMsgs.length)];
     if(c<=0){
       clearInterval(ri);
       const sp=G.myTeam==='red'
@@ -3912,14 +4009,22 @@ function closeMerchant(){
 }
 
 function buyHammer(){
-  if(G.coins<10){compMsg([{text:'🪙 Not enough coins! Need 10',cls:'warn'}],true);return;}
-  if(G.hasHammer){compMsg([{text:'🔨 You already have a Hammer',cls:''}],true);return;}
+  if(G.coins<10){
+    toast('🪙 Need 10 coins!');
+    document.getElementById('hammerBtn').style.animation='none';
+    setTimeout(()=>{const b=document.getElementById('hammerBtn');if(b)b.style.borderColor='rgba(255,50,50,.8)';setTimeout(()=>{if(b)b.style.borderColor='';},600);},0);
+    return;
+  }
+  if(G.hasHammer){toast('🔨 Already have Hammer!');return;}
   G.coins-=10; updateCoinHud();
-  G.hasHammer=true;
-  G.meleeWeapon='Hammer';
-  toast('🔨 Hammer acquired! Destroy enemy statues!');
-  compMsg([{text:'🔨 Hammer equipped — destroy statues!',cls:'good'}],true);
+  G.hasHammer=true; G.meleeWeapon='Hammer';
   renderInventorySlots();
+  // Flash the button green on success
+  const btn=document.getElementById('hammerBtn');
+  if(btn){btn.textContent='✅ TRADED!';btn.style.background='rgba(0,180,50,.7)';
+    setTimeout(()=>{btn.textContent='TRADE';btn.style.background='';btn.disabled=true;btn.textContent='✔ OWNED';},800);}
+  toast('🔨 Hammer acquired! Destroy enemy statues!');
+  compMsg([{text:'🔨 Hammer equipped — climb towers to destroy!',cls:'good'}],true);
   closeMerchant();
 }
 
