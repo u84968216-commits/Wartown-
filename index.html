@@ -2662,7 +2662,10 @@ function _loadGunGLBs(base){
     .then(buf=>new GLTFLoader().parse(buf,base,gltf=>{
       _gunGLBs.desert=gltf;
       console.log('✅ eagle_gun.glb loaded');
-      if(G.primaryWeapon==='Desert'&&gunGroup)_replaceGunWithGLB('desert');
+      // Replace if Desert Eagle currently equipped (primary OR secondary)
+      if((G.primaryWeapon==='Desert'||G.secondaryWeapon==='Desert')&&gunGroup){
+        _replaceGunWithGLB('desert');
+      }
     },()=>{}))
     .catch(()=>console.warn('eagle_gun.glb not found'));
 }
@@ -2677,38 +2680,55 @@ function _replaceGunWithGLB(key){
   });
   toRemove.forEach(c=>gunGroup.remove(c));
 
-  const mdl=gltf.scene.clone?gltf.scene.clone():gltf.scene;
+  // Clone scene so original is reusable
+  const mdl=gltf.scene.clone();
   mdl.traverse(c=>{
     if(!c.isMesh)return;
     c.frustumCulled=false;
     if(c.material){
-      const mc=c.material.clone();mc.side=T.DoubleSide;c.material=mc;
+      const mats=Array.isArray(c.material)?c.material:[c.material];
+      mats.forEach(m=>{m.side=T.DoubleSide;});
     }
   });
-  // Scale to fit in view — gun models vary widely
+
+  // Scale to ~0.4 world units longest axis
   const bb=new T.Box3().setFromObject(mdl);
   const sz=bb.getSize(new T.Vector3());
   const longest=Math.max(sz.x,sz.y,sz.z)||1;
-  const sc=0.45/longest; // target ~0.45 world units long
+  const sc=0.4/longest;
   mdl.scale.set(sc,sc,sc);
-  // Re-centre
+
+  // Re-centre model around its own origin
   const bb2=new T.Box3().setFromObject(mdl);
   const ctr=bb2.getCenter(new T.Vector3());
   mdl.position.sub(ctr);
+
+  // Orient: gun barrel should point in -Z (forward). 
+  // Most GLBs export with barrel along +X or +Z — try to auto-detect.
+  // Rotate so longest axis aligns with -Z (forward into screen)
+  const domAxis=sz.x>sz.z?'x':'z';
+  if(domAxis==='x') mdl.rotation.y=Math.PI/2; // rotate 90° so X→Z
+
+  // Reset group to standard first-person position
+  gunGroup.position.set(.19,-.21,-.42);
+  gunGroup.rotation.set(0,.04,0);
+
   gunGroup.add(mdl);
 
   // Setup animation mixer if GLB has clips
   if(gltf.animations&&gltf.animations.length>0){
     const mixer=new T.AnimationMixer(mdl);
-    const idleClip=T.AnimationClip.findByName(gltf.animations,'idle')||gltf.animations[0];
-    const idleAction=mixer.clipAction(idleClip);
-    idleAction.setLoop(T.LoopRepeat,Infinity);
-    idleAction.setEffectiveWeight(1);
-    idleAction.play();
-    // Tick this mixer in the game loop
+    const clip=T.AnimationClip.findByName(gltf.animations,'idle')||
+               T.AnimationClip.findByName(gltf.animations,'Idle')||
+               gltf.animations[0];
+    const action=mixer.clipAction(clip);
+    action.setLoop(T.LoopRepeat,Infinity);
+    action.setEffectiveWeight(1);
+    action.play();
     gunGroup._mixer=mixer;
     gunGroup._clips=gltf.animations;
   }
+  console.log('✅ Gun GLB replaced:',key);
 }
 
 function buildGun(){
@@ -2861,6 +2881,10 @@ function buildGun(){
   gunGroup=g;
   camera.add(gunGroup);
   if(!scene.children.includes(camera))scene.add(camera);
+
+  // If a GLB is already loaded for this weapon, replace procedural model now
+  if(wk==='AR'&&_gunGLBs.ar) setTimeout(()=>_replaceGunWithGLB('ar'),0);
+  else if(wk==='Desert'&&_gunGLBs.desert) setTimeout(()=>_replaceGunWithGLB('desert'),0);
 }
 
 // ─── BOTS ────────────────────────────────────────────────────────────────────
@@ -3166,10 +3190,15 @@ function movePlayer(dt){
   }
 
   // ── Camera ────────────────────────────────────────────────────────────────
+  // pPos.y tracks the absolute floor Y (raised when on stairs/roof/crates)
+  // Eye height is always GROUND_Y above the current floor
+  const floorOffset=pPos.y-GROUND_Y; // how high above base ground we are
+  const eyeY=pPos.y+0.15; // eyes slightly above pPos.y
+
   if(G.camMode==='third'){
     camera.position.set(
       pPos.x - fwX*CAM_DIST,
-      pPos.y+CAM_HEIGHT+Math.sin(pPitch)*CAM_DIST*0.35,
+      eyeY+CAM_HEIGHT+Math.sin(pPitch)*CAM_DIST*0.35,
       pPos.z - fwZ*CAM_DIST
     );
     camera.rotation.order='YXZ';
@@ -3177,30 +3206,29 @@ function movePlayer(dt){
     camera.rotation.x=pPitch*0.5-0.18;
     if(playerMesh){
       playerMesh.visible=true;
-      playerMesh.position.set(pPos.x,pPos.y-GROUND_Y,pPos.z);
+      playerMesh.position.set(pPos.x, floorOffset, pPos.z);
       playerMesh.rotation.y=moving?Math.atan2(velX,velZ):pAngle+Math.PI;
     }
     if(gunGroup)gunGroup.visible=false;
   } else if(G.camMode==='face'){
-    // Second person — camera in FRONT of player, facing their face
     const faceDist=2.2;
     camera.position.set(
       pPos.x + fwX*faceDist,
-      pPos.y+1.4,
+      eyeY+1.2,
       pPos.z + fwZ*faceDist
     );
     camera.rotation.order='YXZ';
-    camera.rotation.y=pAngle+Math.PI; // look back toward player
+    camera.rotation.y=pAngle+Math.PI;
     camera.rotation.x=-0.1;
     if(playerMesh){
       playerMesh.visible=true;
-      playerMesh.position.set(pPos.x,pPos.y-GROUND_Y,pPos.z);
+      playerMesh.position.set(pPos.x, floorOffset, pPos.z);
       playerMesh.rotation.y=moving?Math.atan2(velX,velZ):pAngle+Math.PI;
     }
     if(gunGroup)gunGroup.visible=false;
   } else {
-    // First person
-    camera.position.copy(pPos);
+    // First person — camera at eye level
+    camera.position.set(pPos.x, eyeY, pPos.z);
     camera.rotation.order='YXZ';
     camera.rotation.y=pAngle;
     camera.rotation.x=pPitch;
@@ -3283,10 +3311,68 @@ function losCheck(x1,z1,x2,z2){
 }
 
 // ─── SHOOTING ────────────────────────────────────────────────────────────────
-function startShooting(){if(G.isReloading||!G.matchActive)return;fireOnce();if(shootInterval)clearInterval(shootInterval);shootInterval=setInterval(()=>{if(!G.matchActive||G.isPaused||G.isReloading)return;fireOnce();},(WD[G.primaryWeapon]?.rof||100));}
-function stopShooting(){if(shootInterval){clearInterval(shootInterval);shootInterval=null;}G.isShooting=false;}
+function _isMelee(){
+  const wk=G.primaryWeapon;
+  return wk==='Knife'||wk==='Hammer';
+}
+
+function startShooting(){
+  if(G.isReloading||!G.matchActive)return;
+  if(_isMelee()){doMeleeSwing();return;} // melee — no bullets
+  fireOnce();
+  if(shootInterval)clearInterval(shootInterval);
+  shootInterval=setInterval(()=>{
+    if(!G.matchActive||G.isPaused||G.isReloading)return;
+    fireOnce();
+  },(WD[G.primaryWeapon]?.rof||100));
+}
+
+function stopShooting(){
+  if(shootInterval){clearInterval(shootInterval);shootInterval=null;}
+  G.isShooting=false;
+}
+
+function doMeleeSwing(){
+  if(G.isShooting)return; // already swinging
+  G.isShooting=true;
+  // Visual: swing gun group
+  if(gunGroup){
+    const origZ=gunGroup.position.z;
+    gunGroup.position.z=-0.18; // lunge forward
+    setTimeout(()=>{if(gunGroup)gunGroup.position.z=origZ;},120);
+  }
+  // Damage bots within melee range (2.5 units)
+  const meleeRange=2.5;
+  const dmg=WD[G.primaryWeapon]?.dmg||45;
+  bots.forEach(b=>{
+    if(!b.alive)return;
+    const dist=Math.hypot(b.x-pPos.x, b.z-pPos.z);
+    if(dist<meleeRange){
+      b.health-=dmg;
+      if(b.health<=0){
+        b.alive=false;
+        if(b.mesh){b.mesh.rotation.x=Math.PI/2;b.mesh.position.y=-.3;
+          setTimeout(()=>{if(scene&&b.mesh){scene.remove(b.mesh);b.mesh=null;}},2000);}
+        G.kills++;G.scoreBlue++;updateHUD();showKillFx();
+        addKF('You','Bot');
+        earnCoins(2);
+        compMsg(COMPANION_MSGS.botKill,true);
+        giveXP(50);
+      } else {
+        // Flash red
+        if(b.mesh)b.mesh.traverse(n=>{
+          if(!n.isMesh||!n.material)return;
+          const mats=Array.isArray(n.material)?n.material:[n.material];
+          mats.forEach(m=>{if(!m.color)return;const oc=m.color.clone();m.color.set(0xff3333);setTimeout(()=>{if(m&&m.color)m.color.copy(oc);},110);});
+        });
+      }
+    }
+  });
+  setTimeout(()=>{G.isShooting=false;},280); // swing cooldown
+}
 
 function fireOnce(){
+  if(_isMelee()){doMeleeSwing();return;} // safety guard
   if(G.ammo<=0){doReload();return;}
   if(G.isReloading)return;
   G.ammo--;G.isShooting=true;updateHUD();
