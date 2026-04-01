@@ -559,27 +559,197 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 .sys-btn-close{background:rgba(0,6,22,.5);border-color:rgba(0,88,185,.2);color:rgba(0,142,255,.65);}
 .sys-btn:active{filter:brightness(1.38);}
 
-/* MERCHANT */
-#merchantP{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:860;padding:6px;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);overflow-y:auto;}
+/* ══ MODERN MERCHANT SHOP (Orange/Black theme matching image) ══ */
+#merchantP{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:860;padding:10px;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);}
 #merchantP.open{display:flex;}
-.merch-panel{width:min(96vw,365px);max-height:92vh;overflow-y:auto;background:linear-gradient(160deg,rgba(17,11,4,.94),rgba(27,18,6,.9));border:2px solid rgba(150,100,32,.46);border-radius:7px;box-shadow:0 0 34px rgba(105,66,0,.27),inset 0 0 22px rgba(65,42,0,.12);overflow:hidden;}
-.merch-title{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 12px 7px;background:linear-gradient(135deg,rgba(72,44,7,.68),rgba(46,28,4,.78));border-bottom:2px solid rgba(140,90,22,.36);font-family:'Rajdhani',sans-serif;font-size:clamp(13px,3.5vw,16px);font-weight:700;letter-spacing:3px;color:#f0c070;text-shadow:0 0 10px rgba(238,170,48,.36);}
-.merch-villager{font-size:clamp(17px,5vw,26px);}
-.merch-coins-bar{padding:5px 12px;font-family:'Rajdhani',sans-serif;font-size:clamp(9px,2.6vw,11px);font-weight:700;color:#f0c040;border-bottom:1px solid rgba(110,72,16,.26);background:rgba(0,0,0,.2);display:flex;align-items:center;gap:4px;}
-.trade-row{padding:clamp(7px,1.6vh,10px) 12px;border-bottom:1px solid rgba(90,60,16,.22);background:rgba(0,0,0,.12);transition:background .13s;}
-.trade-row:active{background:rgba(105,68,0,.18);}
-.trade-header{font-family:'Rajdhani',sans-serif;font-size:clamp(10px,2.7vw,12px);font-weight:700;color:#f0d080;letter-spacing:.7px;margin-bottom:3px;}
-.trade-desc{font-size:clamp(7px,1.9vw,9px);color:rgba(190,148,70,.55);margin-bottom:5px;}
-.trade-exchange{display:flex;align-items:center;gap:5px;}
-.trade-slot{width:clamp(32px,9vw,40px);height:clamp(32px,9vw,40px);background:rgba(33,23,7,.8);border:2px solid rgba(90,62,16,.55);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:clamp(12px,3.5vw,17px);box-shadow:inset 0 2px 4px rgba(0,0,0,.36);}
-.trade-slot-count{font-size:clamp(6px,1.5vw,7.5px);font-weight:700;color:#f0c040;margin-top:1px;}
-.trade-arrow{font-size:clamp(8px,2.1vw,11px);color:rgba(192,152,52,.52);flex:1;text-align:center;}
-.trade-buy-btn{margin-left:auto;padding:clamp(4px,1vh,6px) clamp(7px,2.2vw,11px);background:linear-gradient(135deg,rgba(145,90,0,.66),rgba(110,62,0,.86));border:1px solid rgba(208,150,35,.45);border-radius:4px;color:#f0d060;font-family:'Rajdhani',sans-serif;font-size:clamp(9px,2.4vw,11px);font-weight:700;letter-spacing:.7px;cursor:pointer;white-space:nowrap;transition:filter .12s;}
-.trade-buy-btn:active{filter:brightness(1.45);transform:scale(.93);}
-.trade-buy-btn:disabled{opacity:.36;cursor:not-allowed;}
-.trade-buy-btn{transition:filter .12s, transform .1s;}
-.merch-close{display:block;width:100%;padding:clamp(7px,1.5vh,9px);background:rgba(0,0,0,.26);border:none;border-top:1px solid rgba(90,62,16,.26);font-family:'Rajdhani',sans-serif;font-size:clamp(9px,2.6vw,11px);font-weight:700;color:rgba(188,142,45,.55);letter-spacing:1.6px;cursor:pointer;}
-.merch-close:active{color:#f0c040;}
+.merch-panel{
+  width:min(98vw,460px);max-height:94vh;overflow-y:auto;
+  background:linear-gradient(175deg,#1a1208 0%,#0e0a04 60%,#120d06 100%);
+  border:2px solid #ff8c00;border-radius:16px;
+  box-shadow:0 0 60px rgba(255,140,0,.35),0 0 120px rgba(255,100,0,.15),inset 0 0 30px rgba(255,120,0,.05);
+  overflow:hidden;position:relative;
+}
+/* Shop roof bar */
+.merch-roof{
+  background:linear-gradient(135deg,#1c1208,#2a1800);
+  border-bottom:3px solid #ff8c00;
+  padding:0;position:relative;overflow:hidden;
+}
+.merch-roof-stripe{
+  height:18px;
+  background:repeating-linear-gradient(90deg,#ff8c00 0,#ff8c00 22px,#1a1208 22px,#1a1208 44px);
+  opacity:.85;
+}
+.merch-sign{
+  background:linear-gradient(135deg,#1a0e00,#2a1800);
+  padding:10px 16px 8px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.merch-sign-text{
+  font-size:clamp(18px,5vw,26px);font-weight:900;letter-spacing:6px;
+  color:#ff8c00;text-shadow:0 0 20px rgba(255,140,0,.8),0 0 40px rgba(255,100,0,.4);
+  text-transform:uppercase;font-family:'Arial Black',sans-serif;
+}
+.merch-sign-coins{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,140,0,.12);border:1px solid rgba(255,140,0,.4);
+  border-radius:20px;padding:5px 12px;
+  font-size:13px;font-weight:900;color:#ffc44d;
+}
+/* Weapon display shelf */
+.merch-shelf{
+  background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(10,6,0,.6));
+  border-bottom:2px solid rgba(255,140,0,.25);
+  padding:10px 14px;
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+}
+.merch-shelf::-webkit-scrollbar{display:none;}
+.merch-shelf-item{
+  flex-shrink:0;width:56px;height:56px;
+  background:linear-gradient(135deg,rgba(255,140,0,.08),rgba(0,0,0,.5));
+  border:1.5px solid rgba(255,140,0,.3);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  font-size:20px;cursor:pointer;transition:all .2s;
+  box-shadow:inset 0 0 10px rgba(255,140,0,.1);
+}
+.merch-shelf-item:hover,.merch-shelf-item.active{
+  border-color:#ff8c00;background:rgba(255,140,0,.15);
+  box-shadow:0 0 12px rgba(255,140,0,.3),inset 0 0 10px rgba(255,140,0,.1);
+}
+.merch-shelf-lbl{font-size:6px;color:rgba(255,200,100,.6);margin-top:2px;font-weight:700;text-transform:uppercase;}
+/* Item cards grid */
+.merch-items{padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.merch-card{
+  background:linear-gradient(160deg,rgba(30,18,4,.9),rgba(18,10,0,.95));
+  border:1.5px solid rgba(255,140,0,.2);border-radius:10px;
+  padding:10px;cursor:pointer;transition:all .18s;
+  position:relative;overflow:hidden;
+}
+.merch-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#ff8c00,transparent);opacity:0;transition:opacity .2s;}
+.merch-card:hover::before,.merch-card:active::before{opacity:1;}
+.merch-card:active{border-color:#ff8c00;transform:scale(.97);}
+.merch-card-ico{font-size:24px;margin-bottom:4px;}
+.merch-card-name{font-size:11px;font-weight:900;color:#ffd080;letter-spacing:.5px;text-transform:uppercase;}
+.merch-card-desc{font-size:9px;color:rgba(255,180,80,.5);margin:2px 0 6px;line-height:1.4;}
+.merch-card-price{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.35);
+  border-radius:12px;padding:3px 8px;font-size:10px;font-weight:900;color:#ffc44d;
+}
+.merch-card-btn{
+  display:block;width:100%;margin-top:6px;
+  background:linear-gradient(135deg,#ff8c00,#cc6600);
+  border:none;border-radius:6px;color:#fff;
+  font-size:10px;font-weight:900;letter-spacing:1px;
+  padding:6px;cursor:pointer;text-transform:uppercase;
+  transition:all .15s;
+}
+.merch-card-btn:active{transform:scale(.95);filter:brightness(1.2);}
+.merch-card-btn:disabled{opacity:.35;cursor:not-allowed;background:#555;}
+/* Featured item (full width) */
+.merch-card.featured{grid-column:1/-1;display:flex;align-items:center;gap:12px;}
+.merch-card.featured .merch-card-ico{font-size:36px;flex-shrink:0;}
+.merch-card.featured .merch-card-info{flex:1;}
+.merch-card.featured .merch-card-btn{margin-top:0;width:auto;padding:8px 16px;}
+/* Close button */
+.merch-close-bar{
+  padding:10px 14px;border-top:1px solid rgba(255,140,0,.2);
+  display:flex;gap:8px;
+}
+.merch-close{
+  flex:1;padding:10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);border-radius:8px;
+  color:rgba(255,255,255,.5);font-size:12px;font-weight:800;
+  letter-spacing:1px;cursor:pointer;text-transform:uppercase;
+}
+.merch-close:active{background:rgba(255,140,0,.15);color:#ff8c00;}
+
+/* ══ CHAT SYSTEM ══ */
+#chatPanel{
+  position:fixed;bottom:calc(2vh + min(18vw,88px) + 60px);left:50%;transform:translateX(-50%);
+  width:min(90vw,340px);z-index:300;pointer-events:none;
+}
+#chatMessages{
+  max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;
+  padding-bottom:4px;scrollbar-width:none;
+}
+#chatMessages::-webkit-scrollbar{display:none;}
+.chat-msg{
+  background:rgba(0,0,0,.72);border-radius:8px;padding:4px 8px;
+  font-size:10px;color:#fff;line-height:1.4;backdrop-filter:blur(4px);
+  border-left:3px solid rgba(255,255,255,.2);animation:chatIn .25s ease;
+}
+@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.chat-msg.blue{border-color:#4af;}.chat-msg.red{border-color:#f55;}.chat-msg.system{border-color:#f0c040;color:#f0c040;}
+.chat-name{font-weight:900;margin-right:4px;}
+.chat-name.blue{color:#5bf;}.chat-name.red{color:#f66;}
+#chatInputBar{
+  display:flex;gap:6px;margin-top:4px;pointer-events:all;
+  background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;padding:5px 8px;backdrop-filter:blur(8px);
+}
+#chatInput{
+  flex:1;background:none;border:none;outline:none;color:#fff;
+  font-size:12px;font-family:inherit;
+}
+#chatInput::placeholder{color:rgba(255,255,255,.3);}
+#chatSendBtn{
+  background:linear-gradient(135deg,#ff6b35,#cc4400);border:none;
+  border-radius:6px;color:#fff;font-size:10px;font-weight:800;
+  padding:4px 10px;cursor:pointer;letter-spacing:.5px;
+}
+/* Quick chat bar */
+#quickChatBar{
+  display:flex;gap:4px;margin-top:4px;pointer-events:all;flex-wrap:wrap;
+}
+.qc-btn{
+  background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;color:rgba(255,255,255,.8);font-size:9px;font-weight:700;
+  padding:3px 8px;cursor:pointer;letter-spacing:.3px;transition:all .15s;
+  pointer-events:all;touch-action:manipulation;
+}
+.qc-btn:active{background:rgba(255,107,53,.3);border-color:#ff6b35;color:#fff;}
+/* Chat toggle button */
+#chatToggleBtn{
+  position:fixed;bottom:calc(2vh + min(18vw,88px) + 14px);left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.2);
+  border-radius:12px;color:#fff;font-size:9px;font-weight:800;
+  padding:4px 12px;cursor:pointer;z-index:301;pointer-events:all;
+  touch-action:manipulation;letter-spacing:.5px;
+}
+#chatToggleBtn.active{border-color:#ff6b35;color:#ff8c44;}
+
+/* ══ TEAM ALERTS ══ */
+#teamAlerts{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:5px;align-items:center;
+  z-index:600;pointer-events:none;
+}
+.team-alert{
+  background:rgba(0,0,0,.88);border-radius:20px;padding:5px 14px;
+  font-size:11px;font-weight:800;color:#fff;letter-spacing:.5px;
+  backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);
+  animation:alertIn .3s ease, alertOut .4s ease 2.5s forwards;
+  white-space:nowrap;
+}
+@keyframes alertIn{from{opacity:0;transform:scale(.8) translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes alertOut{from{opacity:1}to{opacity:0;transform:scale(.8) translateY(-8px)}}
+.team-alert.danger{border-color:rgba(255,60,60,.5);background:rgba(80,0,0,.88);}
+.team-alert.good{border-color:rgba(60,255,100,.4);background:rgba(0,50,20,.88);}
+.team-alert.warn{border-color:rgba(255,200,0,.4);background:rgba(50,35,0,.88);}
+
+/* ══ TEAM COLOR GLOW ══ */
+.team-blue-glow{box-shadow:0 0 14px rgba(80,160,255,.7);}
+.team-orange-glow{box-shadow:0 0 14px rgba(255,140,0,.7);}
+
+/* ══ STATUE CRACK OVERLAY ══ */
+.statue-crack{
+  position:fixed;inset:0;pointer-events:none;z-index:650;opacity:0;
+  background:radial-gradient(ellipse at center,rgba(255,50,0,.15) 0%,transparent 60%);
+  transition:opacity .3s;
+}
+.statue-crack.show{opacity:1;animation:crackPulse .5s ease;}
+@keyframes crackPulse{0%{opacity:0}50%{opacity:1}100%{opacity:.3}}
 
 /* TOWER INTERIOR */
 #towerInterior{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:855;padding:6px;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);}
@@ -761,6 +931,26 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div id="companion"></div>
     <!-- Tower entrance prompt -->
     <div id="towerPrompt">[ TAP ] Enter Tower</div>
+    <!-- Chat toggle -->
+    <div id="chatToggleBtn" onclick="toggleChat()">💬 CHAT</div>
+  </div>
+  <!-- Team alerts (outside tc so they render above) -->
+  <div id="teamAlerts"></div>
+  <!-- Statue crack effect -->
+  <div class="statue-crack" id="statueCrack"></div>
+  <!-- Chat panel (outside tc) -->
+  <div id="chatPanel" style="display:none;">
+    <div id="chatMessages"></div>
+    <div id="quickChatBar">
+      <button class="qc-btn" onclick="sendQuickMsg('Enemy near! 👁')">Enemy near</button>
+      <button class="qc-btn" onclick="sendQuickMsg('Need help! 🆘')">Help</button>
+      <button class="qc-btn" onclick="sendQuickMsg('Attack! ⚔')">Attack</button>
+      <button class="qc-btn" onclick="sendQuickMsg('Defend! 🛡')">Defend</button>
+    </div>
+    <div id="chatInputBar">
+      <input id="chatInput" type="text" placeholder="Type message..." maxlength="80" autocomplete="off">
+      <button id="chatSendBtn" onclick="sendChatMsg()">SEND</button>
+    </div>
   </div>
   <div class="hflash" id="hflash"></div>
   <div class="knot" id="knot">ENEMY DOWN!</div>
@@ -837,36 +1027,84 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
   </div>
 </div>
 
-<!-- ── MERCHANT SHOP PANEL ── -->
+<!-- ── MERCHANT SHOP PANEL (Modern Orange/Black) ── -->
 <div id="merchantP">
   <div class="merch-panel">
-    <div class="merch-title">⚔ MERCHANT</div>
-    <div class="merch-coins-bar">🪙 <span id="merchCoins">0</span> coins available</div>
-    <div class="merch-item">
-      <div class="merch-item-ico">🔨</div>
-      <div class="merch-item-info">
-        <div class="merch-item-name">HAMMER</div>
-        <div class="merch-item-desc">Destroy enemy statues · DMG 150 · One-hit statue</div>
+    <!-- Striped roof bar -->
+    <div class="merch-roof">
+      <div class="merch-roof-stripe"></div>
+      <div class="merch-sign">
+        <div class="merch-sign-text">⚔ SHOP</div>
+        <div class="merch-sign-coins">🪙 <span id="merchCoins">0</span></div>
       </div>
-      <button class="merch-buy-btn" id="hammerBtn" onclick="buyHammer()">TRADE</button>
     </div>
-    <div class="merch-item">
-      <div class="merch-item-ico">💊</div>
-      <div class="merch-item-info">
-        <div class="merch-item-name">HEALTH KIT</div>
-        <div class="merch-item-desc">Restore 50 HP instantly</div>
+    <!-- Weapon display shelf -->
+    <div class="merch-shelf">
+      <div class="merch-shelf-item active">🔫<span class="merch-shelf-lbl">AR</span></div>
+      <div class="merch-shelf-item">🎯<span class="merch-shelf-lbl">SNIPER</span></div>
+      <div class="merch-shelf-item">💥<span class="merch-shelf-lbl">SHOTGUN</span></div>
+      <div class="merch-shelf-item">🔫<span class="merch-shelf-lbl">LMG</span></div>
+      <div class="merch-shelf-item">🔫<span class="merch-shelf-lbl">SMG</span></div>
+      <div class="merch-shelf-item">🔫<span class="merch-shelf-lbl">PISTOL</span></div>
+    </div>
+    <!-- Items grid -->
+    <div class="merch-items">
+      <!-- Featured: Hammer -->
+      <div class="merch-card featured">
+        <div class="merch-card-ico">🔨</div>
+        <div class="merch-card-info">
+          <div class="merch-card-name">War Hammer</div>
+          <div class="merch-card-desc">Destroys enemy statues · One hit · DMG 150</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div class="merch-card-price">🪙 10 coins</div>
+            <button class="merch-card-btn" id="hammerBtn" onclick="buyHammer()" style="flex:1">BUY</button>
+          </div>
+        </div>
       </div>
-      <button class="merch-buy-btn" onclick="buyHealthKit()">5 🪙</button>
-    </div>
-    <div class="merch-item">
-      <div class="merch-item-ico">💨</div>
-      <div class="merch-item-info">
-        <div class="merch-item-name">SPEED BOOST</div>
-        <div class="merch-item-desc">+50% movement speed for 15s</div>
+      <!-- Health Kit -->
+      <div class="merch-card">
+        <div class="merch-card-ico">💊</div>
+        <div class="merch-card-name">Health Kit</div>
+        <div class="merch-card-desc">Restore 50 HP instantly</div>
+        <div class="merch-card-price">🪙 5 coins</div>
+        <button class="merch-card-btn" onclick="buyHealthKit()">BUY</button>
       </div>
-      <button class="merch-buy-btn" onclick="buySpeedBoost()">8 🪙</button>
+      <!-- Speed Boost -->
+      <div class="merch-card">
+        <div class="merch-card-ico">💨</div>
+        <div class="merch-card-name">Speed Boost</div>
+        <div class="merch-card-desc">+50% speed for 15s</div>
+        <div class="merch-card-price">🪙 8 coins</div>
+        <button class="merch-card-btn" onclick="buySpeedBoost()">BUY</button>
+      </div>
+      <!-- Shield -->
+      <div class="merch-card">
+        <div class="merch-card-ico">🛡️</div>
+        <div class="merch-card-name">Shield</div>
+        <div class="merch-card-desc">+30 armor for 20s</div>
+        <div class="merch-card-price">🪙 6 coins</div>
+        <button class="merch-card-btn" onclick="buyShield()">BUY</button>
+      </div>
+      <!-- Grenade Pack -->
+      <div class="merch-card">
+        <div class="merch-card-ico">💣</div>
+        <div class="merch-card-name">Grenade Pack</div>
+        <div class="merch-card-desc">+3 grenades</div>
+        <div class="merch-card-price">🪙 4 coins</div>
+        <button class="merch-card-btn" onclick="buyGrenadePack()">BUY</button>
+      </div>
+      <!-- Ammo -->
+      <div class="merch-card">
+        <div class="merch-card-ico">🎯</div>
+        <div class="merch-card-name">Ammo Box</div>
+        <div class="merch-card-desc">Full ammo refill</div>
+        <div class="merch-card-price">🪙 3 coins</div>
+        <button class="merch-card-btn" onclick="buyAmmoBox()">BUY</button>
+      </div>
     </div>
-    <button class="merch-close" onclick="closeMerchant()">✕ LEAVE SHOP</button>
+    <div class="merch-close-bar">
+      <button class="merch-close" onclick="closeMerchant()">✕ CLOSE SHOP</button>
+    </div>
   </div>
 </div>
 <div class="pov" id="settingsP"><div class="pan">
@@ -1278,6 +1516,7 @@ const G={
   camMode:'third',
   coins:0,        // in-game coins (bot kill=2, player kill=5)
   hasHammer:false,// bought hammer from merchant
+  hasShield:false,shieldHp:0,shieldTimer:0,
 };
 
 const WD={
@@ -2055,17 +2294,28 @@ function setupOnline(lobbyData){
         lbl.style.color=d.team==='red'?'#ff9999':'#99ffcc';
         document.body.appendChild(lbl);
         onlinePlayers[uid]={mesh,lbl,data:d};
+        // Alert when teammate joins
+        if(d.team===G.myTeam) teamAlert('🤝 '+( d.name||'Player')+' joined your team','good');
       } else {
         onlinePlayers[uid].data=d;
         if(d.x!==undefined){
           onlinePlayers[uid].mesh.position.set(d.x,0,d.z||0);
           onlinePlayers[uid].mesh.rotation.y=d.a||0;
         }
+        // Teammate low health alert
+        if(d.hp!==undefined&&d.hp<25&&d.team===G.myTeam){
+          teamAlert('⚠️ Teammate '+(d.name||'Player')+' is low HP!','warn');
+        }
       }
     });
     // Remove gone players
     Object.keys(onlinePlayers).forEach(uid=>{
-      if(!all[uid]){scene.remove(onlinePlayers[uid].mesh);onlinePlayers[uid].lbl.remove();delete onlinePlayers[uid];}
+      if(!all[uid]){
+        teamAlert('💀 '+(onlinePlayers[uid].data?.name||'Player')+' eliminated','');
+        scene.remove(onlinePlayers[uid].mesh);
+        onlinePlayers[uid].lbl.remove();
+        delete onlinePlayers[uid];
+      }
     });
   });
   // Listen for damage to me
@@ -2073,6 +2323,29 @@ function setupOnline(lobbyData){
     const v=snap.val();if(v)playerHit(v.d||10);
     snap.ref.remove();
   });
+  // Listen for match events (kills, eliminations)
+  MATCH_REF.child('events').limitToLast(1).on('child_added',snap=>{
+    const ev=snap.val();
+    if(!ev)return;
+    if(ev.type==='death'&&ev.team!==G.myTeam){
+      teamAlert('☠️ '+( ev.name||'Enemy')+' eliminated','good');
+    }
+    if(ev.type==='towerAttack'){
+      if(ev.team===G.myTeam) teamAlert('🏰 YOUR TOWER IS UNDER ATTACK!','danger');
+    }
+  });
+  // Statue sync
+  _initStatueSync();
+  // Chat sync
+  if(!_chatRef){
+    _chatRef=MATCH_REF.child('chat');
+    _chatRef.limitToLast(30).on('child_added',snap=>{
+      const d=snap.val();
+      if(d) _addChatMessage(d.name,d.text,d.team);
+    });
+  }
+  // Apply team colors to player mesh
+  setTimeout(_applyTeamColors, 600);
 }
 
 function pushMyPos(now){
@@ -2426,49 +2699,234 @@ function buildMap(){
 
 // ── MERCHANT SHOP BUILDING ────────────────────────────────────────────────────
 function _buildMerchantShop(CX,CZ,mWall,mRoof){
-  const sw=7, sd=7, sh=3.5; // shop width, depth, height
-  // Floor
-  const floorMat=new T.MeshLambertMaterial({color:0x9a8860});
-  const floor=new T.Mesh(new T.PlaneGeometry(sw,sd),floorMat);
-  floor.rotation.x=-Math.PI/2;floor.position.set(CX,.08,CZ);scene.add(floor);
+  // ── Materials ────────────────────────────────────────────────────────────────
+  const mDark    = new T.MeshLambertMaterial({color:0x1a1208});
+  const mOrange  = new T.MeshLambertMaterial({color:0xff8c00,emissive:0x441800,emissiveIntensity:.3});
+  const mOrangeDk= new T.MeshLambertMaterial({color:0xcc5500});
+  const mYellow  = new T.MeshLambertMaterial({color:0xffd000,emissive:0x553300,emissiveIntensity:.25});
+  const mConcrete= new T.MeshLambertMaterial({color:0x4a4a52});
+  const mConcrDk = new T.MeshLambertMaterial({color:0x2e2e38});
+  const mGlass   = new T.MeshLambertMaterial({color:0x88ccff,transparent:true,opacity:.35,side:T.DoubleSide});
+  const mWood    = new T.MeshLambertMaterial({color:0x6a3a10});
+  const mGold    = new T.MeshLambertMaterial({color:0xd4a020,emissive:0x604000,emissiveIntensity:.3});
+  const mGlowOrg = new T.MeshBasicMaterial({color:0xff8c00});
+  const mStripe1 = new T.MeshLambertMaterial({color:0xff8c00});
+  const mStripe2 = new T.MeshLambertMaterial({color:0x1a1208});
 
-  // 4 walls with gap at front (south side = entrance)
-  // Back wall
-  const bw=new T.Mesh(new T.BoxGeometry(sw,.05+sh,.3),mWall);
-  bw.position.set(CX,sh/2,CZ-sd/2);scene.add(bw);_addWall(CX,CZ-sd/2,sw/2,.2,sh);
-  // Left wall
-  const lw=new T.Mesh(new T.BoxGeometry(.3,sh,sd),mWall);
-  lw.position.set(CX-sw/2,sh/2,CZ);scene.add(lw);_addWall(CX-sw/2,CZ,.2,sd/2,sh);
-  // Right wall
-  const rw=new T.Mesh(new T.BoxGeometry(.3,sh,sd),mWall);
-  rw.position.set(CX+sw/2,sh/2,CZ);scene.add(rw);_addWall(CX+sw/2,CZ,.2,sd/2,sh);
-  // Front wall — two halves with entrance gap (2u wide gap)
-  const fw1=new T.Mesh(new T.BoxGeometry(2,.05+sh,.3),mWall);
-  fw1.position.set(CX-2.5,sh/2,CZ+sd/2);scene.add(fw1);_addWall(CX-2.5,CZ+sd/2,1,.2,sh);
-  const fw2=new T.Mesh(new T.BoxGeometry(2,.05+sh,.3),mWall);
-  fw2.position.set(CX+2.5,sh/2,CZ+sd/2);scene.add(fw2);_addWall(CX+2.5,CZ+sd/2,1,.2,sh);
+  const sw=9, sd=8, sh=3.8; // shop width, depth, height (larger)
+  const px=CX, pz=CZ; // center
 
-  // Roof
-  const roofCone=new T.Mesh(new T.ConeGeometry(sw*.75,2,4),mRoof);
-  roofCone.position.set(CX,sh+1,CZ);roofCone.rotation.y=Math.PI/4;scene.add(roofCone);
+  // ── 1. OCTAGONAL BASE PLATFORM (like image) ──────────────────────────────────
+  const platGeo=new T.CylinderGeometry(7.5,8,0.5,8);
+  const plat=new T.Mesh(platGeo,mConcrDk);
+  plat.position.set(px,0.25,pz);scene.add(plat);
+  _addStep(px,pz,7,7,0.5);
 
-  // Counter/desk inside
-  const desk=new T.Mesh(new T.BoxGeometry(4,.8,.6),new T.MeshLambertMaterial({color:0x6a4818}));
-  desk.position.set(CX,.4,CZ-1.5);scene.add(desk);
-  _addWall(CX,CZ-1.5,2,.35,.8);
+  // Yellow border ring on platform
+  const borderGeo=new T.TorusGeometry(7.4,0.22,4,8);
+  const border=new T.Mesh(borderGeo,mYellow);
+  border.rotation.x=Math.PI/2;border.position.set(px,0.51,pz);scene.add(border);
 
-  // Sign above entrance
-  const signMat=new T.MeshLambertMaterial({color:0xd4a020,emissive:0x804000,emissiveIntensity:.4});
-  const sign=new T.Mesh(new T.BoxGeometry(3,.6,.1),signMat);
-  sign.position.set(CX,sh+.3,CZ+sd/2+.1);scene.add(sign);
+  // Platform floor tile (inner hex)
+  const innerFloor=new T.Mesh(new T.CylinderGeometry(6.5,6.5,0.08,8),mConcrete);
+  innerFloor.position.set(px,0.52,pz);scene.add(innerFloor);
 
-  // Awning
-  const awningMat=new T.MeshLambertMaterial({color:0xcc2200});
-  const awning=new T.Mesh(new T.BoxGeometry(sw+.4,.12,2),awningMat);
-  awning.position.set(CX,sh+.05,CZ+sd/2+.8);scene.add(awning);
+  // ── 2. MAIN BUILDING BODY (octagonal walls) ───────────────────────────────────
+  // 8 wall segments for octagonal shape
+  const wallH=sh; const wallR=5.2;
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI*2, a2=(i+1)/8*Math.PI*2;
+    const isFront=(i===0||i===7); // front two faces open
+    if(isFront) continue;
+    const mx=(Math.cos(a)+Math.cos(a2))/2*wallR;
+    const mz=(Math.sin(a)+Math.sin(a2))/2*wallR;
+    const segLen=2*wallR*Math.sin(Math.PI/8)+.05;
+    const segAng=(a+a2)/2+Math.PI/2;
+    const wall=new T.Mesh(new T.BoxGeometry(segLen,wallH,.35),mDark);
+    wall.position.set(px+mx,wallH/2+0.5,pz+mz);
+    wall.rotation.y=segAng; scene.add(wall);
+    _addWall(px+mx,pz+mz,segLen/2+.1,.25,wallH+0.5);
+  }
 
-  // Place ghost.glb as merchant (loads async, scene captured now)
-  _placeMerchantCharacter(CX, CZ-1.8);
+  // Front left + right partial walls (leaving entrance gap)
+  const fwMat=mDark;
+  const flw=new T.Mesh(new T.BoxGeometry(1.8,wallH,.35),fwMat);
+  flw.position.set(px-3.8,wallH/2+0.5,pz+wallR*.72);scene.add(flw);
+  _addWall(px-3.8,pz+wallR*.72,0.9,.25,wallH+0.5);
+  const frw=new T.Mesh(new T.BoxGeometry(1.8,wallH,.35),fwMat);
+  frw.position.set(px+3.8,wallH/2+0.5,pz+wallR*.72);scene.add(frw);
+  _addWall(px+3.8,pz+wallR*.72,0.9,.25,wallH+0.5);
+
+  // ── 3. ROOF (tiered octagonal like image) ────────────────────────────────────
+  const roofY=wallH+0.5;
+  // Lower roof tier
+  const roof1=new T.Mesh(new T.CylinderGeometry(5.8,6.2,0.5,8),mConcrDk);
+  roof1.position.set(px,roofY+.25,pz);scene.add(roof1);
+  // Orange trim band
+  const roofTrim=new T.Mesh(new T.CylinderGeometry(6.25,6.25,0.18,8),mOrange);
+  roofTrim.position.set(px,roofY+.08,pz);scene.add(roofTrim);
+  // Upper roof tier
+  const roof2=new T.Mesh(new T.CylinderGeometry(4.2,5.5,0.8,8),mDark);
+  roof2.position.set(px,roofY+.9,pz);scene.add(roof2);
+  // Top dome
+  const dome=new T.Mesh(new T.CylinderGeometry(2.5,4.0,1.2,8),mConcrDk);
+  dome.position.set(px,roofY+1.7,pz);scene.add(dome);
+  // Dome top band
+  const domeBand=new T.Mesh(new T.CylinderGeometry(2.5,2.5,0.18,8),mOrange);
+  domeBand.position.set(px,roofY+2.35,pz);scene.add(domeBand);
+  // Top spire
+  const spire=new T.Mesh(new T.ConeGeometry(0.6,2.2,8),mYellow);
+  spire.position.set(px,roofY+3.5,pz);scene.add(spire);
+  const spireBase=new T.Mesh(new T.CylinderGeometry(0.7,0.7,0.3,8),mOrange);
+  spireBase.position.set(px,roofY+2.5,pz);scene.add(spireBase);
+  // Corner mini-spires (4 at compass points)
+  [0,1,2,3].forEach(i=>{
+    const a=i/4*Math.PI*2+Math.PI/8;
+    const sr=5.0;
+    const sx=px+Math.cos(a)*sr, sz=pz+Math.sin(a)*sr;
+    const ms=new T.Mesh(new T.ConeGeometry(0.28,1.1,6),mYellow);
+    ms.position.set(sx,roofY+1.8,sz);scene.add(ms);
+    const msb=new T.Mesh(new T.CylinderGeometry(0.32,0.32,0.2,6),mOrange);
+    msb.position.set(sx,roofY+1.25,sz);scene.add(msb);
+  });
+  // Flag pole + flag
+  const pole=new T.Mesh(new T.CylinderGeometry(0.05,0.05,2,5),
+    new T.MeshLambertMaterial({color:0x888888}));
+  pole.position.set(px,roofY+5.6,pz);scene.add(pole);
+  const flag=new T.Mesh(new T.BoxGeometry(1.2,0.7,0.05),
+    new T.MeshLambertMaterial({color:0x2244ff,emissive:0x001144,emissiveIntensity:.3}));
+  flag.position.set(px+0.65,roofY+6.3,pz);scene.add(flag);
+
+  // SHOP sign (glowing)
+  const signBg=new T.Mesh(new T.BoxGeometry(4,.8,.15),mDark);
+  signBg.position.set(px,wallH+0.1,pz+wallR*.72+.2);scene.add(signBg);
+  const signGlow=new T.Mesh(new T.BoxGeometry(3.6,.6,.12),mOrange);
+  signGlow.position.set(px,wallH+0.1,pz+wallR*.72+.28);scene.add(signGlow);
+  // Orange trim on sign edges
+  const signTrimT=new T.Mesh(new T.BoxGeometry(4,.1,.12),mYellow);
+  signTrimT.position.set(px,wallH+0.5,pz+wallR*.72+.25);scene.add(signTrimT);
+  const signTrimB=new T.Mesh(new T.BoxGeometry(4,.1,.12),mYellow);
+  signTrimB.position.set(px,wallH-.3,pz+wallR*.72+.25);scene.add(signTrimB);
+
+  // ── 4. STRIPED AWNING (yellow/dark stripes like image) ───────────────────────
+  const awningW=sw+.6, awningD=2.2;
+  const STRIPES=9;
+  for(let i=0;i<STRIPES;i++){
+    const sw2=awningW/STRIPES;
+    const sm=new T.Mesh(new T.BoxGeometry(sw2-.04,.08,awningD),
+      i%2===0?mStripe1:mStripe2);
+    sm.position.set(px-awningW/2+sw2*(i+.5),wallH-.02,pz+wallR*.72+awningD/2-.1);
+    scene.add(sm);
+  }
+  // Awning front edge bar
+  const awEdge=new T.Mesh(new T.BoxGeometry(awningW,.18,.18),mOrangeDk);
+  awEdge.position.set(px,wallH-.08,pz+wallR*.72+awningD-.15);scene.add(awEdge);
+
+  // ── 5. ORANGE VERTICAL PILLARS (like image corners) ─────────────────────────
+  [-3.5,3.5].forEach(ox=>{
+    const pillar=new T.Mesh(new T.BoxGeometry(0.4,wallH+0.5,0.4),mOrange);
+    pillar.position.set(px+ox,wallH/4+0.5,pz+wallR*.72);scene.add(pillar);
+    _addWall(px+ox,pz+wallR*.72,.22,.22,wallH);
+    // Orange glow strip on pillar
+    const strip=new T.Mesh(new T.BoxGeometry(0.1,wallH,.06),mGlowOrg);
+    strip.position.set(px+ox,wallH/4+0.5,pz+wallR*.72+.22);scene.add(strip);
+  });
+
+  // ── 6. DISPLAY WINDOWS (glowing counters with items) ─────────────────────────
+  // Left display window
+  const wFrame1=new T.Mesh(new T.BoxGeometry(2.8,1.8,.12),mOrangeDk);
+  wFrame1.position.set(px-2,1.8,pz+wallR*.72-.05);scene.add(wFrame1);
+  const wGlass1=new T.Mesh(new T.BoxGeometry(2.4,1.4,.08),mGlass);
+  wGlass1.position.set(px-2,1.8,pz+wallR*.72+.02);scene.add(wGlass1);
+  // Right display window
+  const wFrame2=new T.Mesh(new T.BoxGeometry(2.8,1.8,.12),mOrangeDk);
+  wFrame2.position.set(px+2,1.8,pz+wallR*.72-.05);scene.add(wFrame2);
+  const wGlass2=new T.Mesh(new T.BoxGeometry(2.4,1.4,.08),mGlass);
+  wGlass2.position.set(px+2,1.8,pz+wallR*.72+.02);scene.add(wGlass2);
+
+  // Glowing shelf lights inside windows
+  const shelfLight1=new T.PointLight(0x4488ff,1.2,4);
+  shelfLight1.position.set(px-2,2.2,pz+wallR*.5);scene.add(shelfLight1);
+  const shelfLight2=new T.PointLight(0x44ff88,1.0,4);
+  shelfLight2.position.set(px+2,2.2,pz+wallR*.5);scene.add(shelfLight2);
+
+  // ── 7. INTERIOR COUNTERS / DESKS ─────────────────────────────────────────────
+  // Main counter (like the holographic desk in image)
+  const deskBody=new T.Mesh(new T.BoxGeometry(4.5,0.9,.7),mWood);
+  deskBody.position.set(px,0.95,pz+.5);scene.add(deskBody);
+  _addWall(px,pz+.5,2.3,.4,.9);
+  // Holographic display on counter (glowing green like image)
+  const holoGeo=new T.BoxGeometry(1.5,.05,0.9);
+  const holoMat=new T.MeshBasicMaterial({color:0x00ff88,transparent:true,opacity:.7});
+  const holo=new T.Mesh(holoGeo,holoMat);
+  holo.position.set(px+.8,1.42,pz+.5);scene.add(holo);
+  const holoLight=new T.PointLight(0x00ff88,.8,3);
+  holoLight.position.set(px+.8,1.8,pz+.5);scene.add(holoLight);
+  // Second holographic display
+  const holo2=new T.Mesh(new T.BoxGeometry(1.2,.05,0.8),
+    new T.MeshBasicMaterial({color:0x00ddff,transparent:true,opacity:.65}));
+  holo2.position.set(px-.8,1.42,pz+.5);scene.add(holo2);
+  const holoLight2=new T.PointLight(0x00ddff,.6,3);
+  holoLight2.position.set(px-.8,1.8,pz+.5);scene.add(holoLight2);
+
+  // Side crates (like image)
+  [px-5.5,px+5.5].forEach(cx2=>{
+    const crate=new T.Mesh(new T.BoxGeometry(1.4,1.4,1.4),mWood);
+    crate.position.set(cx2,.7,pz+2.5);scene.add(crate);
+    _addWall(cx2,pz+2.5,.72,.72,1.4);
+    // Cross pattern on crate
+    const cx1m=new T.Mesh(new T.BoxGeometry(1.42,.1,.1),mOrangeDk);
+    cx1m.position.set(cx2,.7,pz+2.5);scene.add(cx1m);
+    const cx2m=new T.Mesh(new T.BoxGeometry(.1,.1,1.42),mOrangeDk);
+    cx2m.position.set(cx2,.7,pz+2.5);scene.add(cx2m);
+  });
+
+  // ── 8. EXTERNAL STAIRCASE (right side of building, like image) ───────────────
+  const stairX=px+wallR+0.3;
+  const stairZ=pz-1.5;
+  const NSTEPS=8;
+  for(let i=0;i<NSTEPS;i++){
+    const sy=(i+1)*((sh+0.5)/NSTEPS);
+    const stepW=2.2, stepD=0.8, stepH=0.22;
+    const step=new T.Mesh(new T.BoxGeometry(stepW,stepH,stepD),mConcrDk);
+    step.position.set(stairX-i*.35,sy,stairZ+i*stepD*.6);scene.add(step);
+    _addStep(stairX-i*.35,stairZ+i*stepD*.6,stepW/2,stepD/2,sy+stepH/2);
+    // Orange step edge
+    const edge=new T.Mesh(new T.BoxGeometry(stepW,.06,.06),mOrange);
+    edge.position.set(stairX-i*.35,sy+stepH/2,stairZ+i*stepD*.6-stepD/2);scene.add(edge);
+  }
+  // Stair railings
+  const railMat=new T.MeshLambertMaterial({color:0x2e2e38});
+  const rail=new T.Mesh(new T.BoxGeometry(.08,sh+.5,.08),railMat);
+  rail.position.set(stairX+1.1,sh/2,stairZ+NSTEPS*.48-.3);scene.add(rail);
+  // Stair landing (roof access platform)
+  const landing=new T.Mesh(new T.BoxGeometry(2.4,.12,2.4),mConcrete);
+  landing.position.set(stairX-NSTEPS*.35+1,sh+0.5,stairZ+NSTEPS*.48);scene.add(landing);
+  _addStep(stairX-NSTEPS*.35+1,stairZ+NSTEPS*.48,1.2,1.2,sh+0.56);
+
+  // ── 9. ROOF WALKWAY / FENCE ──────────────────────────────────────────────────
+  // Low fence/railing around shop roof
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI*2;
+    const fr=5.85;
+    const fx=px+Math.cos(a)*fr, fz=pz+Math.sin(a)*fr;
+    const post=new T.Mesh(new T.BoxGeometry(.1,0.6,.1),mOrange);
+    post.position.set(fx,roofY+0.8,fz);scene.add(post);
+  }
+
+  // ── 10. AMBIENT ORANGE LIGHT inside shop ─────────────────────────────────────
+  const shopLight=new T.PointLight(0xff8c00,0.8,12);
+  shopLight.position.set(px,wallH*.6,pz);scene.add(shopLight);
+
+  // ── 11. ORANGE TRIM LINES on front face ──────────────────────────────────────
+  // Horizontal glow bands at base of walls
+  const trimBase=new T.Mesh(new T.BoxGeometry(sw+.5,.12,.12),mOrange);
+  trimBase.position.set(px,.55,pz+wallR*.72+.2);scene.add(trimBase);
+  const trimTop=new T.Mesh(new T.BoxGeometry(sw+.5,.12,.12),mOrange);
+  trimTop.position.set(px,wallH+.08,pz+wallR*.72+.2);scene.add(trimTop);
+
+  // Place merchant character inside
+  _placeMerchantCharacter(px, pz-1.2);
 }
 
 // ── MERCHANT CHARACTER (ghost.glb or fallback) ────────────────────────────────
@@ -3630,6 +4088,13 @@ function respawnBots(){
 }
 
 function playerHit(dmg){
+  // Shield absorbs damage first
+  if(G.hasShield&&G.shieldHp>0){
+    const absorbed=Math.min(dmg,G.shieldHp);
+    G.shieldHp-=absorbed;dmg-=absorbed;
+    if(G.shieldHp<=0){G.hasShield=false;toast('🛡️ Shield broken!');}
+    if(dmg<=0){updateHUD();return;}
+  }
   pHealth=Math.max(0,pHealth-dmg);updateHUD();
   const f=document.getElementById('hflash');f.classList.remove('fl');void f.offsetWidth;f.classList.add('fl');
   pPitch+=.04;setTimeout(()=>pPitch-=.03,70);
@@ -3639,29 +4104,39 @@ function playerDied(){
   G.deaths++;G.matchActive=false;stopShooting();
   const ov=document.getElementById('rov');
   ov.classList.add('show');
-  const funnyMsgs=[
-    '💀 Get rekt, try again',
-    '😂 Maybe aim next time?',
-    '🤣 Skill issue detected',
-    '💅 Back on your feet bestie',
-    '🫡 Respawning warrior...',
-    '😤 Touch grass then respawn',
-  ];
-  let c=6;
+
+  // Sync death to Firebase
+  if(MATCH_REF&&CUR_USER){
+    MATCH_REF.child('events').push({type:'death',uid:CUR_USER.uid,name:UD.username||'Player',team:G.myTeam,t:Date.now()});
+  }
+
+  // If our statue is gone — no respawn
+  const statueAlive=_statueAlive[G.myTeam]!==false;
+  if(!statueAlive){
+    document.getElementById('rc').textContent='❌';
+    document.getElementById('rcFunny').textContent='Your statue is destroyed — no respawn!';
+    teamAlert('💀 No respawn — statue destroyed!','danger');
+    setTimeout(()=>{ov.classList.remove('show');endMatch();},5000);
+    return;
+  }
+
+  const funnyMsgs=['💀 Get rekt, try again','😂 Maybe aim next time?','🤣 Skill issue detected','💅 Back on your feet bestie','🫡 Respawning warrior...','😤 Touch grass then respawn'];
+  let c=4;
   document.getElementById('rc').textContent=c;
   document.getElementById('rcFunny').textContent=funnyMsgs[Math.floor(Math.random()*funnyMsgs.length)];
   const ri=setInterval(()=>{
     c--;
     document.getElementById('rc').textContent=c;
-    if(c===3)document.getElementById('rcFunny').textContent=funnyMsgs[Math.floor(Math.random()*funnyMsgs.length)];
+    if(c===2)document.getElementById('rcFunny').textContent=funnyMsgs[Math.floor(Math.random()*funnyMsgs.length)];
     if(c<=0){
       clearInterval(ri);
       const sp=G.myTeam==='red'
-        ?{x:MAP_CX*CS, z:(MAP_CZ+MAP_R-4)*CS}
-        :{x:MAP_CX*CS, z:(MAP_CZ-MAP_R+4)*CS};
-      pPos.set(sp.x, 0.1, sp.z);pVelY=0;pHealth=100; // respawn at ground level
+        ?{x:MAP_CX*CS,z:(MAP_CZ+MAP_R-4)*CS}
+        :{x:MAP_CX*CS,z:(MAP_CZ-MAP_R+4)*CS};
+      pPos.set(sp.x,0.1,sp.z);pVelY=0;pHealth=100;
       const w=WD[G.primaryWeapon];G.ammo=w.ammo;G.ammoReserve=w.res;
       G.matchActive=true;ov.classList.remove('show');updateHUD();
+      teamAlert('✅ Back in action!','good');
     }
   },1000);
 }
@@ -3736,12 +4211,26 @@ function backToMenu(){
   gameRunning=false;if(animId)cancelAnimationFrame(animId);
   clearInterval(matchTimerInt);stopShooting();G.matchActive=false;
   if(MATCH_REF){MATCH_REF.off();MATCH_REF=null;}
+  // Reset chat + statue state
+  if(_chatRef){_chatRef.off();_chatRef=null;}
+  _statueAlive.blue=true;_statueAlive.red=true;_statueAlive.green=true;_statueAlive.orange=true;
+  // Hide chat panel
+  const cp=document.getElementById('chatPanel');if(cp)cp.style.display='none';
+  _chatVisible=false;
+  document.getElementById('chatToggleBtn')?.classList.remove('active');
+  document.getElementById('chatMessages')&&(document.getElementById('chatMessages').innerHTML='');
   document.getElementById('eov').classList.remove('show');closeP('pauseP');
   document.querySelectorAll('.plabel').forEach(e=>e.remove());
   if(CUR_USER)db.ref('users/'+CUR_USER.uid).once('value').then(s=>{if(s.exists()){UD=s.val();refreshMenuUI();}});
   showScr('menuScreen');
 }
-function restartGame(){document.getElementById('eov').classList.remove('show');initGame(null);}
+function restartGame(){
+  // Reset statue state for new game
+  _statueAlive.blue=true;_statueAlive.red=true;_statueAlive.green=true;_statueAlive.orange=true;
+  if(_chatRef){_chatRef.off();_chatRef=null;}
+  document.getElementById('eov').classList.remove('show');
+  initGame(null);
+}
 
 // ─── TOUCH CONTROLS ──────────────────────────────────────────────────────────
 // lookZone = FULL SCREEN - any swipe anywhere turns the camera
@@ -4038,6 +4527,7 @@ function tickCompanion(dt){
 
   // HP check
   if(pHealth<30)compMsg(COMPANION_MSGS.lowHp);
+  if(pHealth<25)teamAlert('⚠️ LOW HEALTH! Find cover!','danger');
   // Ammo check
   else if(G.ammo===0)compMsg(COMPANION_MSGS.noAmmo);
 
@@ -4223,6 +4713,10 @@ function _checkTowerProximity(){
     prompt.style.display='block';
     if(G.hasHammer&&found.team!==G.myTeam){
       prompt.textContent='🔨 Enter Tower — Destroy Statue';
+      // Notify enemy team their tower is under attack
+      if(MATCH_REF&&found.team!==G.myTeam){
+        MATCH_REF.child('events').push({type:'towerAttack',team:found.team,by:UD.username||'Player',t:Date.now()});
+      }
     } else {
       prompt.textContent='🏰 Enter '+found.team.toUpperCase()+' Tower';
     }
@@ -4236,40 +4730,7 @@ function _checkTowerProximity(){
 
 function openTowerInterior(tz){
   G.isPaused=true; stopShooting();
-  const teamColors={blue:'#2255ff',red:'#ff2222',green:'#22aa33',orange:'#ff8800'};
-  const col=teamColors[tz.team]||'#00cfff';
-  const isAlive=true; // TODO: track statue HP
-
-  document.getElementById('towerTitle').textContent='🏰 '+tz.team.toUpperCase()+' TOWER';
-  document.getElementById('towerTitle').style.color=col;
-
-  const orb=document.getElementById('towerStatueOrb');
-  orb.style.color=col; orb.style.borderColor=col;
-  orb.className='tower-statue-orb '+(isAlive?'alive':'dead');
-
-  document.getElementById('towerStatueLabel').style.color=col;
-  document.getElementById('towerStatueLabel').textContent='STATUE CORE';
-
-  const statusEl=document.getElementById('towerStatueStatus');
-  if(isAlive){statusEl.textContent='● ACTIVE';statusEl.style.color='#7fffa0';}
-  else{statusEl.textContent='✕ DESTROYED';statusEl.style.color='#ff5555';}
-
-  document.getElementById('towerTeamName').textContent=tz.team.toUpperCase();
-  document.getElementById('towerTeamName').style.color=col;
-  document.getElementById('towerStatueHp').textContent=isAlive?'100%':'0%';
-  document.getElementById('towerStatueHp').style.color=isAlive?'#88ff88':'#ff5555';
-  document.getElementById('towerRespawnStatus').textContent=isAlive?'ACTIVE':'DISABLED';
-  document.getElementById('towerRespawnStatus').style.color=isAlive?'#7fffa0':'#ff5555';
-
-  // Show destroy button only if enemy tower + player has hammer
-  const destroyBtn=document.getElementById('towerDestroyBtn');
-  if(G.hasHammer&&tz.team!==G.myTeam&&isAlive){
-    destroyBtn.style.display='block';
-  } else {
-    destroyBtn.style.display='none';
-  }
-
-  document.getElementById('towerInterior').classList.add('open');
+  openTowerInteriorFixed(tz);
 }
 
 function closeTowerInterior(){
@@ -4283,7 +4744,16 @@ function tryDestroyStatue(){
   // Destroy
   const statueObj=scene&&scene.getObjectByName&&scene.getObjectByName('statue_'+_currentTowerZone.team);
   if(statueObj){statueObj.visible=false;}
+
+  // Mark statue destroyed in game state
+  _statueAlive[_currentTowerZone.team]=false;
+
+  // Show crack effect
+  const crack=document.getElementById('statueCrack');
+  if(crack){crack.classList.add('show');setTimeout(()=>crack.classList.remove('show'),600);}
+
   toast('💥 Enemy statue DESTROYED!');
+  teamAlert('💥 Enemy statue destroyed! They cannot respawn!','good');
   compMsg([{text:'💥 Enemy statue destroyed! They cannot respawn!',cls:'good'}],true);
   // Update interior
   const orb=document.getElementById('towerStatueOrb');
@@ -4296,14 +4766,248 @@ function tryDestroyStatue(){
   document.getElementById('towerRespawnStatus').style.color='#ff5555';
   document.getElementById('towerDestroyBtn').style.display='none';
   earnCoins(10); // bonus coins for statue destroy
+
+  // Sync to Firebase
+  if(MATCH_REF){
+    MATCH_REF.child('statues/'+_currentTowerZone.team).set({alive:false,destroyedBy:CUR_USER?.uid||'player'});
+  }
+
+  // Check win condition
+  setTimeout(()=>_checkWinCondition(),500);
 }
 
-// ─── SPEED BOOST TICK ─────────────────────────────────────────────────────────
+// ─── STATUE STATE TRACKING ────────────────────────────────────────────────────
+const _statueAlive={blue:true,red:true,green:true,orange:true};
+
+function _initStatueSync(){
+  if(!MATCH_REF)return;
+  MATCH_REF.child('statues').on('value',snap=>{
+    const data=snap.val()||{};
+    Object.entries(data).forEach(([team,info])=>{
+      if(info&&!info.alive&&_statueAlive[team]){
+        _statueAlive[team]=false;
+        // Hide statue visually
+        const obj=scene&&scene.getObjectByName('statue_'+team);
+        if(obj)obj.visible=false;
+        if(team!==G.myTeam){
+          teamAlert('💥 '+team.toUpperCase()+' statue destroyed!','good');
+        } else {
+          teamAlert('💀 YOUR statue was destroyed! No more respawns!','danger');
+          compMsg([{text:'💀 Your statue is gone — no respawns!',cls:'danger'}],true);
+        }
+      }
+    });
+  });
+}
+
+function _checkWinCondition(){
+  // Determine active teams
+  const teams=[G.myTeam, G.myTeam==='blue'?'red':'blue'];
+  const enemyTeam=teams.find(t=>t!==G.myTeam)||'red';
+  if(!_statueAlive[enemyTeam]){
+    // Count surviving enemy players — if all dead, we win
+    const enemiesAlive=bots.filter(b=>b.alive&&b.team===enemyTeam).length;
+    if(enemiesAlive===0){
+      setTimeout(()=>{
+        G.scoreBlue+=(G.myTeam==='blue'?1:0);
+        G.scoreRed+=(G.myTeam==='red'?1:0);
+        updateHUD();
+        endMatch();
+      },2000);
+    }
+  }
+}
+
+// ─── TEAM ALERT SYSTEM ────────────────────────────────────────────────────────
+function teamAlert(msg, type=''){
+  const el=document.createElement('div');
+  el.className='team-alert'+(type?' '+type:'');
+  el.textContent=msg;
+  const container=document.getElementById('teamAlerts');
+  if(!container)return;
+  container.appendChild(el);
+  setTimeout(()=>{if(el.parentNode)el.remove();},2900);
+}
+
+// Show alert for low health
+function _checkTeamAlerts(){
+  if(pHealth<25&&pHealth>0){
+    teamAlert('⚠️ LOW HEALTH! Find cover!','danger');
+  }
+}
+
+// ─── CHAT SYSTEM ──────────────────────────────────────────────────────────────
+let _chatVisible=false;
+let _chatRef=null;
+
+function toggleChat(){
+  _chatVisible=!_chatVisible;
+  const panel=document.getElementById('chatPanel');
+  const btn=document.getElementById('chatToggleBtn');
+  if(panel){panel.style.display=_chatVisible?'flex':' none';panel.style.flexDirection='column';}
+  if(btn){btn.classList.toggle('active',_chatVisible);}
+  if(_chatVisible){
+    // Init firebase chat listener once
+    if(!_chatRef&&MATCH_REF){
+      _chatRef=MATCH_REF.child('chat');
+      _chatRef.limitToLast(20).on('child_added',snap=>{
+        const d=snap.val();
+        if(d)_addChatMessage(d.name,d.text,d.team);
+      });
+    }
+  }
+}
+
+function sendChatMsg(){
+  const inp=document.getElementById('chatInput');
+  if(!inp||!inp.value.trim())return;
+  const txt=inp.value.trim().slice(0,80);
+  inp.value='';
+  const name=UD.username||CUR_USER?.displayName||'Player';
+  const team=G.myTeam||'blue';
+  if(MATCH_REF){
+    MATCH_REF.child('chat').push({name,text:txt,team,t:Date.now()});
+  } else {
+    // Practice — show locally
+    _addChatMessage(name,txt,team);
+  }
+}
+
+function sendQuickMsg(txt){
+  const name=UD.username||CUR_USER?.displayName||'Player';
+  const team=G.myTeam||'blue';
+  if(MATCH_REF){
+    MATCH_REF.child('chat').push({name,text:txt,team,t:Date.now()});
+  } else {
+    _addChatMessage(name,txt,team);
+  }
+}
+
+function _addChatMessage(name,text,team){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const el=document.createElement('div');
+  el.className='chat-msg '+(team||'');
+  el.innerHTML=`<span class="chat-name ${team||''}">${escHtml(name)}</span>${escHtml(text)}`;
+  msgs.appendChild(el);
+  while(msgs.children.length>20)msgs.removeChild(msgs.firstChild);
+  msgs.scrollTop=msgs.scrollHeight;
+  // Also show mini popup if chat is closed
+  if(!_chatVisible){
+    teamAlert(`💬 ${name}: ${text.slice(0,30)}`,'');
+  }
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Keyboard enter to send chat
+document.addEventListener('keydown',e=>{
+  if(e.code==='KeyT'&&G.matchActive&&!_chatVisible){
+    e.preventDefault();toggleChat();
+    setTimeout(()=>document.getElementById('chatInput')?.focus(),100);
+  }
+  if(e.code==='Enter'&&_chatVisible){
+    const inp=document.getElementById('chatInput');
+    if(document.activeElement===inp){sendChatMsg();}
+  }
+  if(e.code==='Escape'&&_chatVisible){toggleChat();}
+});
+
+// ─── NEW SHOP ITEMS ────────────────────────────────────────────────────────────
+function buyShield(){
+  if(G.coins<6){toast('🪙 Need 6 coins!');return;}
+  G.coins-=6; updateCoinHud();
+  G.hasShield=true; G.shieldTimer=20; G.shieldHp=30;
+  toast('🛡️ Shield active! +30 armor for 20s');
+  closeMerchant();
+}
+function buyGrenadePack(){
+  if(G.coins<4){toast('🪙 Need 4 coins!');return;}
+  G.coins-=4; updateCoinHud();
+  G.grenades=Math.min(G.grenades+3,8);
+  document.getElementById('nb').textContent=G.grenades;
+  toast('💣 +3 grenades!');
+  closeMerchant();
+}
+function buyAmmoBox(){
+  if(G.coins<3){toast('🪙 Need 3 coins!');return;}
+  G.coins-=3; updateCoinHud();
+  const w=WD[G.primaryWeapon];
+  if(w){G.ammo=w.ammo;G.ammoReserve=w.res;updateHUD();}
+  toast('🎯 Ammo refilled!');
+  closeMerchant();
+}
+
+// ─── SHIELD TICK ──────────────────────────────────────────────────────────────
+function tickShield(dt){
+  if(!G.hasShield)return;
+  G.shieldTimer-=dt;
+  if(G.shieldTimer<=0){G.hasShield=false;toast('🛡️ Shield expired');}
+}
+
+// ─── TEAM COLOR GLOW ON PLAYERS ───────────────────────────────────────────────
+function _applyTeamColors(){
+  if(!playerMesh)return;
+  const isBlue=G.myTeam==='blue';
+  const teamCol=isBlue?0x2244ff:0xff8800;
+  // Tint the procedural player mesh to team color
+  playerMesh.traverse(c=>{
+    if(!c.isMesh||!c.material)return;
+    const mats=Array.isArray(c.material)?c.material:[c.material];
+    mats.forEach(m=>{
+      if(m.color&&(m.color.r>0.1&&m.color.g>0.1&&m.color.b>0.5)){
+        // Blue-ish parts → team color
+        m.color.set(teamCol);
+      }
+    });
+  });
+}
+
+// ─── IMPROVED TOWER INTERIOR — real statue HP ─────────────────────────────────
+function openTowerInteriorFixed(tz){
+  // Override the existing function to use real _statueAlive state
+  const isAlive=_statueAlive[tz.team]!==false;
+  const teamColors={blue:'#4488ff',red:'#ff4444',green:'#22aa33',orange:'#ff8800'};
+  const col=teamColors[tz.team]||'#00cfff';
+
+  document.getElementById('towerTitle').textContent='🏰 '+tz.team.toUpperCase()+' TOWER';
+  document.getElementById('towerTitle').style.color=col;
+  const orb=document.getElementById('towerStatueOrb');
+  orb.style.color=col; orb.style.borderColor=col;
+  orb.className='tower-statue-orb '+(isAlive?'alive':'dead');
+  document.getElementById('towerStatueLabel').style.color=col;
+  document.getElementById('towerStatueLabel').textContent='STATUE CORE';
+  const statusEl=document.getElementById('towerStatueStatus');
+  if(isAlive){statusEl.textContent='● ACTIVE';statusEl.style.color='#7fffa0';}
+  else{statusEl.textContent='✕ DESTROYED';statusEl.style.color='#ff5555';}
+  document.getElementById('towerTeamName').textContent=tz.team.toUpperCase();
+  document.getElementById('towerTeamName').style.color=col;
+  document.getElementById('towerStatueHp').textContent=isAlive?'100%':'0%';
+  document.getElementById('towerStatueHp').style.color=isAlive?'#88ff88':'#ff5555';
+  document.getElementById('towerRespawnStatus').textContent=isAlive?'ACTIVE':'DISABLED';
+  document.getElementById('towerRespawnStatus').style.color=isAlive?'#7fffa0':'#ff5555';
+  const destroyBtn=document.getElementById('towerDestroyBtn');
+  if(G.hasHammer&&tz.team!==G.myTeam&&isAlive){
+    destroyBtn.style.display='block';
+  } else {
+    destroyBtn.style.display='none';
+  }
+  document.getElementById('towerInterior').classList.add('open');
+}
+
+// ─── TOWER INTERIOR patched inline — openTowerInteriorFixed() called from openTowerInterior() ───
+
+// ─── RESPAWN SYSTEM: handled in playerDied() directly above ───────────────────
+
+// ─── FIREBASE INTEGRATION: statue sync + chat init in setupOnline() ───────────
+
+// ─── SPEED BOOST TICK (patched to include shield) ─────────────────────────────
 function tickBoosts(dt){
   if(G.hasSpeedBoost){
     G_speedBoostTimer-=dt;
     if(G_speedBoostTimer<=0){G.hasSpeedBoost=false;toast('💨 Speed boost ended');}
   }
+  tickShield(dt);
 }
 
 function doLogout(){
