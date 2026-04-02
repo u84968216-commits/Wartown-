@@ -345,32 +345,30 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
   z-index:20;
 }
 
-/* CAMERA TOGGLE button — bottom center, elevated above action buttons */
+/* CAMERA TOGGLE button — bottom CENTER, same level as fwd/shoot */
 #camBtn{
   position:absolute;
-  bottom:calc(2vh + min(18vw,88px) + 1.2vh);
+  bottom:2vh;
   left:50%;
   transform:translateX(-50%);
-  width:min(14vw,68px);
-  height:min(8vw,38px);
-  border-radius:20px;
-  background:rgba(0,0,0,.7);
-  border:1.5px solid rgba(255,255,255,.2);
+  width:min(12vw,58px);
+  height:min(12vw,58px);
+  border-radius:50%;
+  background:rgba(0,0,0,.72);
+  border:2px solid rgba(255,255,255,.25);
   color:#fff;
-  font-size:min(2.8vw,11px);
+  font-size:min(2.4vw,10px);
   font-weight:800;
-  letter-spacing:.5px;
+  letter-spacing:.3px;
   text-transform:uppercase;
-  display:flex;align-items:center;justify-content:center;gap:4px;
+  display:flex;align-items:center;justify-content:center;gap:2px;flex-direction:column;
   cursor:pointer;touch-action:manipulation;pointer-events:all;
   z-index:10;
-  white-space:nowrap;
-  padding:0 10px;
   transition:background .15s, border-color .15s;
 }
 #camBtn:active{background:rgba(255,107,53,.3);border-color:rgba(255,107,53,.6);}
-#camBtn.fp{border-color:rgba(0,200,255,.35);background:rgba(0,100,180,.25);}
-#camBtn.tp{border-color:rgba(255,107,53,.35);background:rgba(180,60,0,.2);}
+#camBtn.fp{border-color:rgba(0,200,255,.5);background:rgba(0,100,180,.3);}
+#camBtn.tp{border-color:rgba(255,107,53,.5);background:rgba(180,60,0,.25);}
 
 /* GAME OVERLAYS */
 .hflash{position:fixed;inset:0;background:rgba(255,30,30,.3);pointer-events:none;opacity:0;z-index:600;}
@@ -664,60 +662,97 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
 }
 .merch-close:active{background:rgba(255,140,0,.15);color:#ff8c00;}
 
-/* ══ CHAT SYSTEM ══ */
-#chatPanel{
-  position:fixed;bottom:calc(2vh + min(18vw,88px) + 60px);left:50%;transform:translateX(-50%);
-  width:min(90vw,340px);z-index:300;pointer-events:none;
+
+/* ══ CHAT SYSTEM — compact, icon-triggered, bottom-left ══ */
+/* Chat icon button */
+#chatToggleBtn{
+  position:absolute;
+  bottom:calc(2vh + min(18vw,88px) + min(10vw,48px) + 2vh);
+  left:1.5vw;
+  width:min(10vw,46px);height:min(10vw,46px);
+  border-radius:50%;
+  background:rgba(0,0,0,.75);border:2px solid rgba(255,255,255,.2);
+  color:#fff;font-size:min(4.5vw,20px);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:15;pointer-events:all;touch-action:manipulation;
+  transition:all .2s;
 }
+#chatToggleBtn.active{border-color:#ff6b35;background:rgba(180,60,0,.4);}
+/* Chat panel — compact, bottom-left, not covering screen */
+#chatPanel{
+  position:fixed;
+  bottom:calc(2vh + min(18vw,88px) + min(10vw,48px) + min(10vw,48px) + 4.5vh);
+  left:1.5vw;
+  width:min(68vw,300px);
+  z-index:302;
+  flex-direction:column;
+  gap:0;
+  display:none;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,.6);
+}
+#chatPanel.open{display:flex;}
+/* Header bar with close button */
+#chatHeader{
+  display:flex;justify-content:space-between;align-items:center;
+  background:rgba(10,8,20,.95);border-bottom:1px solid rgba(255,255,255,.1);
+  padding:5px 8px;
+}
+#chatHeaderLbl{font-size:10px;font-weight:800;color:rgba(255,200,100,.8);letter-spacing:.5px;}
+#chatCloseBtn{
+  background:rgba(255,60,60,.15);border:1px solid rgba(255,60,60,.3);
+  border-radius:5px;color:#ff8888;font-size:12px;font-weight:900;
+  width:22px;height:22px;cursor:pointer;pointer-events:all;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;flex-shrink:0;
+}
+#chatCloseBtn:active{background:rgba(255,60,60,.4);}
 #chatMessages{
-  max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;
-  padding-bottom:4px;scrollbar-width:none;
+  max-height:100px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;
+  padding:4px 6px;scrollbar-width:none;
+  background:rgba(0,0,0,.85);
 }
 #chatMessages::-webkit-scrollbar{display:none;}
 .chat-msg{
-  background:rgba(0,0,0,.72);border-radius:8px;padding:4px 8px;
-  font-size:10px;color:#fff;line-height:1.4;backdrop-filter:blur(4px);
-  border-left:3px solid rgba(255,255,255,.2);animation:chatIn .25s ease;
+  border-radius:5px;padding:3px 7px;
+  font-size:9.5px;color:#fff;line-height:1.4;
+  border-left:2px solid rgba(255,255,255,.2);animation:chatIn .2s ease;
 }
-@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes chatIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .chat-msg.blue{border-color:#4af;}.chat-msg.red{border-color:#f55;}.chat-msg.system{border-color:#f0c040;color:#f0c040;}
 .chat-name{font-weight:900;margin-right:4px;}
 .chat-name.blue{color:#5bf;}.chat-name.red{color:#f66;}
-#chatInputBar{
-  display:flex;gap:6px;margin-top:4px;pointer-events:all;
-  background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.12);
-  border-radius:10px;padding:5px 8px;backdrop-filter:blur(8px);
-}
-#chatInput{
-  flex:1;background:none;border:none;outline:none;color:#fff;
-  font-size:12px;font-family:inherit;
-}
-#chatInput::placeholder{color:rgba(255,255,255,.3);}
-#chatSendBtn{
-  background:linear-gradient(135deg,#ff6b35,#cc4400);border:none;
-  border-radius:6px;color:#fff;font-size:10px;font-weight:800;
-  padding:4px 10px;cursor:pointer;letter-spacing:.5px;
-}
-/* Quick chat bar */
+/* Quick chat buttons */
 #quickChatBar{
-  display:flex;gap:4px;margin-top:4px;pointer-events:all;flex-wrap:wrap;
+  display:flex;gap:3px;pointer-events:all;flex-wrap:wrap;
+  background:rgba(0,0,0,.88);padding:4px 6px;border-top:1px solid rgba(255,255,255,.07);
 }
 .qc-btn{
-  background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.15);
-  border-radius:12px;color:rgba(255,255,255,.8);font-size:9px;font-weight:700;
-  padding:3px 8px;cursor:pointer;letter-spacing:.3px;transition:all .15s;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;color:rgba(255,255,255,.75);font-size:8px;font-weight:700;
+  padding:3px 7px;cursor:pointer;transition:all .15s;
   pointer-events:all;touch-action:manipulation;
 }
 .qc-btn:active{background:rgba(255,107,53,.3);border-color:#ff6b35;color:#fff;}
-/* Chat toggle button */
-#chatToggleBtn{
-  position:fixed;bottom:calc(2vh + min(18vw,88px) + 14px);left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.2);
-  border-radius:12px;color:#fff;font-size:9px;font-weight:800;
-  padding:4px 12px;cursor:pointer;z-index:301;pointer-events:all;
-  touch-action:manipulation;letter-spacing:.5px;
+/* Input row */
+#chatInputBar{
+  display:flex;gap:4px;pointer-events:all;
+  background:rgba(0,0,0,.92);border-top:1px solid rgba(255,255,255,.08);
+  padding:5px 6px;
 }
-#chatToggleBtn.active{border-color:#ff6b35;color:#ff8c44;}
+#chatInput{
+  flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;outline:none;color:#fff;
+  font-size:11px;font-family:inherit;padding:3px 7px;
+}
+#chatInput::placeholder{color:rgba(255,255,255,.28);}
+#chatSendBtn{
+  background:linear-gradient(135deg,#ff6b35,#cc4400);border:none;
+  border-radius:6px;color:#fff;font-size:10px;font-weight:800;
+  padding:4px 9px;cursor:pointer;flex-shrink:0;
+}
+
 
 /* ══ TEAM ALERTS ══ */
 #teamAlerts{
@@ -931,25 +966,29 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div id="companion"></div>
     <!-- Tower entrance prompt -->
     <div id="towerPrompt">[ TAP ] Enter Tower</div>
-    <!-- Chat toggle -->
-    <div id="chatToggleBtn" onclick="toggleChat()">💬 CHAT</div>
+    <!-- Chat toggle icon button (bottom-left) -->
+    <div id="chatToggleBtn" onclick="toggleChat()">💬</div>
   </div>
-  <!-- Team alerts (outside tc so they render above) -->
+  <!-- Team alerts -->
   <div id="teamAlerts"></div>
   <!-- Statue crack effect -->
   <div class="statue-crack" id="statueCrack"></div>
-  <!-- Chat panel (outside tc) -->
-  <div id="chatPanel" style="display:none;">
+  <!-- Chat panel (compact, bottom-left, icon-triggered) -->
+  <div id="chatPanel">
+    <div id="chatHeader">
+      <div id="chatHeaderLbl">💬 TEAM CHAT</div>
+      <button id="chatCloseBtn" onclick="toggleChat()">✕</button>
+    </div>
     <div id="chatMessages"></div>
     <div id="quickChatBar">
       <button class="qc-btn" onclick="sendQuickMsg('Enemy near! 👁')">Enemy near</button>
-      <button class="qc-btn" onclick="sendQuickMsg('Need help! 🆘')">Help</button>
+      <button class="qc-btn" onclick="sendQuickMsg('Need help! 🆘')">Help!</button>
       <button class="qc-btn" onclick="sendQuickMsg('Attack! ⚔')">Attack</button>
       <button class="qc-btn" onclick="sendQuickMsg('Defend! 🛡')">Defend</button>
     </div>
     <div id="chatInputBar">
       <input id="chatInput" type="text" placeholder="Type message..." maxlength="80" autocomplete="off">
-      <button id="chatSendBtn" onclick="sendChatMsg()">SEND</button>
+      <button id="chatSendBtn" onclick="sendChatMsg()">▶</button>
     </div>
   </div>
   <div class="hflash" id="hflash"></div>
@@ -1829,17 +1868,26 @@ function _attachPlayerGLB(gltf){
     if(!c.isMesh)return;
     c.castShadow=false; c.receiveShadow=false; c.frustumCulled=false;
     if(!c.material)return;
-    // Clone material so we don't mutate the original
     const mats=Array.isArray(c.material)?c.material:[c.material];
     const fixed=mats.map(m=>{
       const mc=m.clone();
-      mc.side=T.DoubleSide;        // prevents black/dark backface artefacts
+      mc.side=T.DoubleSide;
       mc.depthWrite=true;
-      mc.transparent=mc.opacity<1||mc.alphaTest>0;
-      // Remove any red tint that might be lingering from hit flash
-      if(mc.color&&mc.color.r>0.85&&mc.color.g<0.3&&mc.color.b<0.3){
-        mc.color.set(0xffffff); // reset accidental red tint
+      // Fix black PBR skin: no env map + high metalness = black
+      if(mc.envMapIntensity!==undefined) mc.envMapIntensity=0;
+      if(mc.isMeshStandardMaterial){
+        if(mc.metalness>0.8) mc.metalness=0.4;
+        if(!mc.roughness||mc.roughness<0.2) mc.roughness=0.5;
       }
+      // If texture maps exist, make sure they're flagged for update
+      if(mc.map){mc.map.needsUpdate=true;}
+      if(mc.normalMap){mc.normalMap.needsUpdate=true;}
+      if(mc.roughnessMap){mc.roughnessMap.needsUpdate=true;}
+      // Reset accidental red tint from hit flash
+      if(mc.color&&mc.color.r>0.85&&mc.color.g<0.3&&mc.color.b<0.3){
+        mc.color.set(0xffffff);
+      }
+      mc.transparent=mc.opacity<1||mc.alphaTest>0;
       mc.needsUpdate=true;
       return mc;
     });
@@ -2369,12 +2417,15 @@ function syncRemotePlayers(){
 
 function makeOnlineMesh(team){
   const g=new T.Group();
-  const col=team==='red'?0x882222:0x224488;
-  const bm=new T.MeshLambertMaterial({color:col});
-  const sk=new T.MeshLambertMaterial({color:0xc89060});
+  const isRed=team==='red';
+  const helmCol=isRed?0xcc2200:0x1a3a88;
+  const bodyCol=isRed?0x5a1a10:0x1a2e55;
+  const bm=new T.MeshLambertMaterial({color:bodyCol});
+  const sk=new T.MeshLambertMaterial({color:0xc89060}); // skin - never team color
+  const hm=new T.MeshLambertMaterial({color:helmCol});   // helmet - team color
   const tr=new T.Mesh(new T.BoxGeometry(.52,.6,.28),bm);tr.position.y=1.1;g.add(tr);
-  const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.62;g.add(hd);
-  const hm=new T.Mesh(new T.BoxGeometry(.36,.18,.36),bm);hm.position.y=1.78;g.add(hm);
+  const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.62;g.add(hd); // face = skin
+  const hl=new T.Mesh(new T.BoxGeometry(.36,.18,.36),hm);hl.position.y=1.78;g.add(hl); // helmet = team
   [-.14,.14].forEach(ox=>{const l=new T.Mesh(new T.BoxGeometry(.2,.72,.2),bm);l.position.set(ox,.36,0);g.add(l);});
   [-.34,.34].forEach(ox=>{const a=new T.Mesh(new T.BoxGeometry(.18,.56,.18),bm);a.position.set(ox,.96,0);g.add(a);});
   return g;
@@ -2905,13 +2956,31 @@ function _buildMerchantShop(CX,CZ,mWall,mRoof){
   _addStep(stairX-NSTEPS*.35+1,stairZ+NSTEPS*.48,1.2,1.2,sh+0.56);
 
   // ── 9. ROOF WALKWAY / FENCE ──────────────────────────────────────────────────
-  // Low fence/railing around shop roof
+  // Solid walkable roof platform
+  const roofFloor=new T.Mesh(new T.CylinderGeometry(5.6,5.6,0.15,8),mConcrete);
+  roofFloor.position.set(px,roofY+0.08,pz);scene.add(roofFloor);
+  // Register roof surface as walkable step
+  _addStep(px,pz,5.2,5.2,roofY+0.15);
+
+  // Fence posts around perimeter
   for(let i=0;i<8;i++){
     const a=i/8*Math.PI*2;
-    const fr=5.85;
+    const fr=5.4;
     const fx=px+Math.cos(a)*fr, fz=pz+Math.sin(a)*fr;
-    const post=new T.Mesh(new T.BoxGeometry(.1,0.6,.1),mOrange);
-    post.position.set(fx,roofY+0.8,fz);scene.add(post);
+    // Fence post
+    const post=new T.Mesh(new T.BoxGeometry(0.12,0.9,0.12),mOrange);
+    post.position.set(fx,roofY+0.6,fz);scene.add(post);
+    // Fence rail between posts
+    const a2=(i+1)/8*Math.PI*2;
+    const fx2=px+Math.cos(a2)*fr, fz2=pz+Math.sin(a2)*fr;
+    const mx2=(fx+fx2)/2, mz2=(fz+fz2)/2;
+    const railLen=Math.sqrt((fx2-fx)**2+(fz2-fz)**2);
+    const railAng=Math.atan2(fz2-fz,fx2-fx);
+    const rail=new T.Mesh(new T.BoxGeometry(railLen,0.08,0.08),mConcrDk);
+    rail.position.set(mx2,roofY+0.9,mz2);
+    rail.rotation.y=-railAng;scene.add(rail);
+    // Invisible wall collider for fence (stops player walking off edge)
+    _addWall(mx2,mz2,railLen/2*0.8,0.2,roofY+1.1);
   }
 
   // ── 10. AMBIENT ORANGE LIGHT inside shop ─────────────────────────────────────
@@ -2964,7 +3033,7 @@ function _placeMerchantCharacter(x,z){
 
         const g=new T.Group();
         g.add(mdl);
-        g.position.set(x,.005,z);
+        g.position.set(x, 0.5, z); // raised above floor level
         g.rotation.y=0; // face south toward the entrance (player comes from south)
         sc.add(g);
         _merchantMesh=g;
@@ -3011,8 +3080,8 @@ function _buildFallbackMerchant(x,z,sc){
   const armR=new T.Mesh(new T.CylinderGeometry(.07,.07,.5,6),robe);
   armR.rotation.z=Math.PI/3; armR.position.set(.38,.98,0);g.add(armR);
 
-  g.position.set(x,.005,z);
-  g.rotation.y=0; // face toward entrance
+  g.position.set(x, 0.5, z); // raised above floor
+  g.rotation.y=0;
   sc.add(g);
   _merchantMesh=g;
   console.log('✅ Fallback merchant placed');
@@ -3061,20 +3130,26 @@ function buildPlayerMesh(){
   if(playerMesh){scene.remove(playerMesh);playerMesh=null;}
   playerGLBMixer=null; playerGLBModel=null; playerGLBClips=null;
   const g=new T.Group();
-  const bm=new T.MeshLambertMaterial({color:0x224488}); // blue team default
-  const sk=new T.MeshLambertMaterial({color:0xc89060});
-  const hm=new T.MeshLambertMaterial({color:0x1c2e10});
+
+  // Team-based helmet color (blue or red/orange)
+  const isRed=G.myTeam==='red';
+  const teamHelmCol = isRed ? 0xcc2200 : 0x1a3a88;  // red or blue helmet
+  const teamBodyCol = isRed ? 0x5a1a10 : 0x1a2e55;  // slightly tinted uniform
+
+  const bm=new T.MeshLambertMaterial({color:teamBodyCol}); // uniform (team color)
+  const sk=new T.MeshLambertMaterial({color:0xc89060});    // skin - NEVER change
+  const hm=new T.MeshLambertMaterial({color:teamHelmCol}); // helmet - team color
   const gm=new T.MeshLambertMaterial({color:0x111111});
   const bk=new T.MeshLambertMaterial({color:0x111111});
 
-  // torso (named for procedural anim)
+  // torso
   const torso=new T.Mesh(new T.BoxGeometry(.52,.62,.28),bm);torso.position.y=1.1;torso.name='pTorso';g.add(torso);
-  // head
-  const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.64;g.add(hd);
-  // helmet
-  const hl=new T.Mesh(new T.BoxGeometry(.36,.2,.36),hm);hl.position.y=1.78;g.add(hl);
+  // head — SKIN COLOR, never team color
+  const hd=new T.Mesh(new T.BoxGeometry(.32,.32,.32),sk);hd.position.y=1.64;hd.name='pHead';g.add(hd);
+  // helmet — TEAM COLOR
+  const hl=new T.Mesh(new T.BoxGeometry(.36,.2,.36),hm);hl.position.y=1.78;hl.name='pHelmet';g.add(hl);
 
-  // Legs — pivoted groups for animation
+  // Legs
   const legL=new T.Group();legL.name='pLegL';legL.position.set(-.14,.82,0);g.add(legL);
   const ulL=new T.Mesh(new T.BoxGeometry(.2,.4,.2),bm);ulL.position.y=-.2;legL.add(ulL);
   const llL=new T.Mesh(new T.BoxGeometry(.18,.36,.18),bm);llL.position.y=-.58;legL.add(llL);
@@ -3085,7 +3160,7 @@ function buildPlayerMesh(){
   const llR=new T.Mesh(new T.BoxGeometry(.18,.36,.18),bm);llR.position.y=-.58;legR.add(llR);
   const btR=new T.Mesh(new T.BoxGeometry(.2,.14,.26),bk);btR.position.set(0,-.77,.03);legR.add(btR);
 
-  // Arms — pivoted groups for animation
+  // Arms — skin on lower arms
   const armL=new T.Group();armL.name='pArmL';armL.position.set(-.36,1.12,0);g.add(armL);
   const uaL=new T.Mesh(new T.BoxGeometry(.17,.32,.17),bm);uaL.position.y=-.16;armL.add(uaL);
   const laL=new T.Mesh(new T.BoxGeometry(.15,.28,.15),sk);laL.position.y=-.44;armL.add(laL);
@@ -3143,25 +3218,36 @@ function _replaceGunWithGLB(key){
   });
   toRemove.forEach(c=>gunGroup.remove(c));
 
-  // Clone scene so original is reusable
   const mdl=gltf.scene.clone();
   mdl.traverse(c=>{
     if(!c.isMesh)return;
     c.frustumCulled=false;
     if(c.material){
       const mats=Array.isArray(c.material)?c.material:[c.material];
-      mats.forEach(m=>{
-        // Preserve original GLB colors — only fix rendering issues
-        m.side=T.DoubleSide;
-        // Fix black gun: envMap without an env map causes black PBR materials
-        if(m.envMapIntensity!==undefined) m.envMapIntensity=0;
-        // Fix black PBR: metalness=1 with no envMap = black. Cap it.
-        if(m.isMeshStandardMaterial){
-          if(m.metalness>0.92) m.metalness=0.65;
-          m.roughness=Math.max(m.roughness||0, 0.25);
+      const fixed=mats.map(m=>{
+        const mc=m.clone();
+        mc.side=T.DoubleSide;
+        // Fix black gun caused by PBR metalness with no env map
+        if(mc.envMapIntensity!==undefined) mc.envMapIntensity=0;
+        if(mc.isMeshStandardMaterial){
+          // Keep metalness reasonable — avoids pure-black look
+          if(mc.metalness===undefined||mc.metalness>0.9) mc.metalness=0.55;
+          if(!mc.roughness||mc.roughness<0.2) mc.roughness=0.3;
+          // Ensure diffuse map is applied
+          if(mc.map) mc.map.needsUpdate=true;
+          // Keep emissive off unless file set it
+          if(!mc.emissive||mc.emissive.r===0&&mc.emissive.g===0&&mc.emissive.b===0){
+            mc.emissive=new T.Color(0x111111);
+          }
         }
-        m.needsUpdate=true;
+        // If material looks pure black (no map, black color), give neutral grey
+        if(!mc.map&&mc.color&&mc.color.r<0.05&&mc.color.g<0.05&&mc.color.b<0.05){
+          mc.color.set(0x888888);
+        }
+        mc.needsUpdate=true;
+        return mc;
       });
+      c.material=Array.isArray(c.material)?fixed:fixed[0];
     }
   });
 
@@ -3177,11 +3263,24 @@ function _replaceGunWithGLB(key){
   const ctr=bb2.getCenter(new T.Vector3());
   mdl.position.sub(ctr);
 
-  // Orient: gun barrel should point in -Z (forward). 
-  // Most GLBs export with barrel along +X or +Z — try to auto-detect.
-  // Rotate so longest axis aligns with -Z (forward into screen)
-  const domAxis=sz.x>sz.z?'x':'z';
-  if(domAxis==='x') mdl.rotation.y=Math.PI/2; // rotate 90° so X→Z
+  // Orient: detect which axis is longest and rotate barrel to face -Z (forward)
+  // Try multiple rotations — GLBs vary wildly in export orientation
+  // We rotate the model group, not individual meshes
+  const domAxis = sz.x > sz.y && sz.x > sz.z ? 'x' :
+                  sz.y > sz.x && sz.y > sz.z ? 'y' : 'z';
+  // Reset any previous rotation
+  mdl.rotation.set(0, 0, 0);
+  if(domAxis === 'x'){
+    // Barrel along X → rotate -90° around Y so X becomes -Z (forward)
+    mdl.rotation.y = -Math.PI / 2;
+  } else if(domAxis === 'y'){
+    // Barrel along Y → rotate 90° around X so Y becomes -Z
+    mdl.rotation.x = Math.PI / 2;
+  }
+  // If domAxis === 'z', model already faces correct axis; check if needs 180° flip
+  // Heuristic: if barrel tip is at positive Z, flip 180° around Y
+  // We always add 180° for gun.glb (known to be backwards)
+  if(key === 'ar') mdl.rotation.y += Math.PI;
 
   // Reset group to standard first-person position
   gunGroup.position.set(.19,-.21,-.42);
@@ -3568,20 +3667,23 @@ function movePlayer(dt){
   let highestFloor=0.0; // ground floor is at Y=0
 
   for(const col of _colliders){
-    const playerBottom = pPos.y;          // feet at pPos.y (GROUND_Y = 0)
-    const playerTop    = pPos.y + 1.6;   // player is 1.6 units tall
+    const playerBottom = pPos.y;
+    const playerTop    = pPos.y + 1.6;
 
     if(col.stair){
       // Climbable surface: raise player's floor if inside XZ footprint
-      // and the surface is reachable (within 1.2 units above current feet)
       const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.05;
       const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.05;
       if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.2){
         highestFloor=col.floorY;
       }
     } else {
-      // Solid wall: block XZ movement only when player vertically overlaps
-      if(playerBottom<col.h&&playerTop>0.05){
+      // Solid wall: block XZ movement only when player vertically overlaps the SIDE
+      // Key fix: if player is standing ON TOP of this collider (feet >= top surface),
+      // do NOT block XZ — player should be able to walk freely on top
+      const colTopY = col.h; // top of collider
+      const playerOnTop = playerBottom >= colTopY - 0.12; // within 12cm of top
+      if(!playerOnTop && playerBottom < col.h && playerTop > 0.05){
         const dxTest=Math.abs(nx-col.x)-col.hw-PR;
         const dzTest=Math.abs(pPos.z-col.z)-col.hd-PR;
         if(dxTest<0&&dzTest<0)canMoveX=false;
@@ -4844,10 +4946,13 @@ function toggleChat(){
   _chatVisible=!_chatVisible;
   const panel=document.getElementById('chatPanel');
   const btn=document.getElementById('chatToggleBtn');
-  if(panel){panel.style.display=_chatVisible?'flex':' none';panel.style.flexDirection='column';}
+  if(panel){
+    panel.classList.toggle('open',_chatVisible);
+    panel.style.display=''; // let CSS class handle it
+  }
   if(btn){btn.classList.toggle('active',_chatVisible);}
   if(_chatVisible){
-    // Init firebase chat listener once
+    setTimeout(()=>document.getElementById('chatInput')?.focus(),100);
     if(!_chatRef&&MATCH_REF){
       _chatRef=MATCH_REF.child('chat');
       _chatRef.limitToLast(20).on('child_added',snap=>{
@@ -4946,22 +5051,9 @@ function tickShield(dt){
 }
 
 // ─── TEAM COLOR GLOW ON PLAYERS ───────────────────────────────────────────────
-function _applyTeamColors(){
-  if(!playerMesh)return;
-  const isBlue=G.myTeam==='blue';
-  const teamCol=isBlue?0x2244ff:0xff8800;
-  // Tint the procedural player mesh to team color
-  playerMesh.traverse(c=>{
-    if(!c.isMesh||!c.material)return;
-    const mats=Array.isArray(c.material)?c.material:[c.material];
-    mats.forEach(m=>{
-      if(m.color&&(m.color.r>0.1&&m.color.g>0.1&&m.color.b>0.5)){
-        // Blue-ish parts → team color
-        m.color.set(teamCol);
-      }
-    });
-  });
-}
+// Team colors are now applied directly in buildPlayerMesh() based on G.myTeam
+// This function is kept as no-op for compatibility
+function _applyTeamColors(){ /* no-op: handled in buildPlayerMesh */ }
 
 // ─── IMPROVED TOWER INTERIOR — real statue HP ─────────────────────────────────
 function openTowerInteriorFixed(tz){
