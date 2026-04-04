@@ -905,6 +905,17 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div class="lcode">Code: <span id="lobCode">----</span></div>
   </div>
   <div class="lbody">
+    <!-- Join by code card -->
+    <div id="joinCard" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;margin-bottom:2px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,107,53,.7);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;">🔗 JOIN BY CODE</div>
+      <div style="display:flex;gap:8px;">
+        <input id="joinCodeInput" type="text" maxlength="6" placeholder="Enter 6-digit code"
+          style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:13px;font-weight:800;letter-spacing:3px;padding:8px 12px;outline:none;text-transform:uppercase;"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+        <button onclick="joinByCode()" style="background:linear-gradient(135deg,#ff6b35,#c0392b);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:800;padding:8px 14px;cursor:pointer;letter-spacing:1px;">JOIN</button>
+      </div>
+      <div id="joinErr" style="font-size:10px;color:#ff7070;margin-top:4px;min-height:14px;"></div>
+    </div>
     <div class="lteams">
       <div class="tblk"><div class="tt b">🔵 Blue Team</div><div id="blueSlots"></div></div>
       <div class="tblk"><div class="tt r">🔴 Red Team</div><div id="redSlots"></div></div>
@@ -913,8 +924,8 @@ input[type=range]{width:100px;accent-color:#ff6b35;}
     <div class="statbar" id="lobStat">Waiting for players...</div>
   </div>
   <div class="lfoot">
-    <button class="btn btnp" id="hostStartBtn" onclick="hostStartMatch()" style="display:none">▶ Start</button>
-    <button class="btn btns" onclick="shareLobby()">🔗 Share</button>
+    <button class="btn btnp" id="hostStartBtn" onclick="hostStartMatch()" style="display:none">▶ Start Match</button>
+    <button class="btn btns" onclick="shareLobby()">🔗 Share Code</button>
     <button class="btn btnd" onclick="leaveLobby()">✕ Leave</button>
   </div>
 </div>
@@ -1487,15 +1498,27 @@ function buyItem(name,price){
 }
 
 // ─── LOBBY ───────────────────────────────────────────────────────────────────
+// ─── LOBBY SYSTEM ─────────────────────────────────────────────────────────────
+// Human-readable 6-char code stored at lobbies/{code}
+// Structure: lobbies/{CODE}/{ host, status, players/{uid}: {name,team,hp,level} }
+
 let LOBBY_ID=null, LOBBY_REF=null, IS_HOST=false;
 
+function _genLobbyCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+  let c='';for(let i=0;i<6;i++)c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
 function listenLobby(){
+  if(!LOBBY_REF)return;
   LOBBY_REF.on('value',snap=>{
     if(!snap.exists()){leaveLobby();return;}
     const data=snap.val();
     renderLobbyPlayers(data.players||{});
+    document.getElementById('lobCode').textContent=LOBBY_ID;
     if(data.status==='go'){
-      G.myTeam=(data.players[CUR_USER.uid]?.team)||'blue';
+      G.myTeam=(data.players?.[CUR_USER?.uid]?.team)||'blue';
       LOBBY_REF.off();
       startOnlineGame(data);
     }
@@ -1505,13 +1528,13 @@ function listenLobby(){
 function renderLobbyPlayers(players){
   const blue=[],red=[];
   Object.values(players).forEach(p=>(p.team==='red'?red:blue).push(p));
-  const slot=p=>`<div class="pslot"><div class="psav">${(p.name||'?')[0].toUpperCase()}</div><div><div class="psn">${p.name||'?'}${p.host?' 👑':''}</div><div class="psl">Lv ${p.level||1}</div></div></div>`;
+  const slot=p=>`<div class="pslot"><div class="psav">${(p.name||'?')[0].toUpperCase()}</div><div><div class="psn">${p.name||'?'}${p.host?' 👑':''}</div><div class="psl">Lv ${p.level||1} · HP ${p.hp||100}</div></div></div>`;
   const empty='<div class="pslot"><div class="psav" style="opacity:.2">+</div><div class="eslt">Waiting...</div></div>';
   document.getElementById('blueSlots').innerHTML=blue.map(slot).join('')+Array(Math.max(0,5-blue.length)).fill(empty).join('');
   document.getElementById('redSlots').innerHTML=red.map(slot).join('')+Array(Math.max(0,5-red.length)).fill(empty).join('');
   const total=Object.keys(players).length;
   const sb=document.getElementById('lobStat');
-  sb.textContent=total+' player'+(total!==1?'s':'')+' connected';
+  sb.textContent=total+' player'+(total!==1?'s':'')+' connected'+(total>=2?' — Ready!':'');
   sb.className='statbar'+(total>=2?' rdy':'');
 }
 
@@ -1520,21 +1543,80 @@ function hostStartMatch(){
   LOBBY_REF.child('players').once('value').then(snap=>{
     const pl=snap.val()||{};
     const keys=Object.keys(pl);
-    const upd={};keys.forEach((k,i)=>{upd[k+'/team']=i%2===0?'blue':'red';});
-    LOBBY_REF.child('players').update(upd).then(()=>LOBBY_REF.child('status').set('go'));
+    if(keys.length<1){toast('Need at least 1 player!');return;}
+    // Assign teams alternately
+    const upd={};
+    keys.forEach((k,i)=>{upd[k+'/team']=i%2===0?'blue':'red';});
+    LOBBY_REF.child('players').update(upd).then(()=>{
+      LOBBY_REF.child('status').set('go');
+    });
   });
 }
 
 function shareLobby(){
-  const code=document.getElementById('lobCode').textContent;
-  navigator.clipboard?.writeText(code).catch(()=>{});
-  toast('Lobby code copied: '+code);
+  const code=LOBBY_ID||'----';
+  if(navigator.share){
+    navigator.share({title:'WarTown',text:'Join my game! Code: '+code}).catch(()=>{});
+  } else {
+    navigator.clipboard?.writeText(code).catch(()=>{});
+    toast('📋 Code copied: '+code);
+  }
+}
+
+// Join lobby by human-readable 6-char code
+async function joinByCode(){
+  const inp=document.getElementById('joinCodeInput');
+  const errEl=document.getElementById('joinErr');
+  const code=(inp?.value||'').trim().toUpperCase();
+  errEl.textContent='';
+  if(code.length!==6){errEl.textContent='Enter a 6-character code.';return;}
+
+  if(!CUR_USER){
+    errEl.textContent='Signing in...';
+    try{
+      await auth.signInAnonymously();
+      CUR_USER=auth.currentUser;
+      const snap=await db.ref('users/'+CUR_USER.uid).once('value');
+      if(!snap.exists()){
+        const name='Player'+Math.floor(1000+Math.random()*9000);
+        UD={username:name,level:1,xp:0,kills:0,deaths:0,assists:0,matches:0,wins:0,coins:0};
+        await db.ref('users/'+CUR_USER.uid).set(UD);
+      } else { UD=snap.val(); }
+      refreshMenuUI();
+    } catch(e){errEl.textContent='Auth failed.';return;}
+  }
+
+  errEl.textContent='Looking for lobby...';
+  const ref=db.ref('lobbies/'+code);
+  const snap=await ref.once('value');
+  if(!snap.exists()){errEl.textContent='Lobby not found!';return;}
+  const data=snap.val();
+  if(data.status==='go'){errEl.textContent='Match already started!';return;}
+
+  const players=data.players||{};
+  if(Object.keys(players).length>=10){errEl.textContent='Lobby is full!';return;}
+
+  // Assign team (join smaller team)
+  const blueCt=Object.values(players).filter(p=>p.team==='blue').length;
+  const redCt=Object.values(players).filter(p=>p.team==='red').length;
+  const myTeam=blueCt<=redCt?'blue':'red';
+
+  LOBBY_ID=code; LOBBY_REF=ref; IS_HOST=false;
+  ref.child('players/'+CUR_USER.uid).set({
+    uid:CUR_USER.uid, name:UD.username||'Player',
+    level:UD.level||1, team:myTeam, hp:100, host:false
+  });
+  ref.child('players/'+CUR_USER.uid).onDisconnect().remove();
+  document.getElementById('hostStartBtn').style.display='none';
+  errEl.textContent='';
+  listenLobby();
+  showScr('lobbyScreen');
 }
 
 function leaveLobby(){
   try{
-    if(LOBBY_REF){
-      if(CUR_USER)LOBBY_REF.child('players/'+CUR_USER.uid).remove();
+    if(LOBBY_REF&&CUR_USER){
+      LOBBY_REF.child('players/'+CUR_USER.uid).remove();
       if(IS_HOST)LOBBY_REF.remove();
       LOBBY_REF.off();
     }
@@ -2274,27 +2356,40 @@ async function _startEngine(lobbyData){
           if(cb){cb.textContent='👁 3RD';cb.className='tp';}
           gameRunning=true;
           let lastT=0;
+          let _frameCount=0;
+          // Target 60fps — on mobile cap pixel ratio already done above
           function loop(now){
             if(!gameRunning)return;
-            const dt=Math.min((now-lastT)/1000,.05);lastT=now;
+            animId=requestAnimationFrame(loop);
+            const dt=Math.min((now-lastT)/1000,.05);
+            // Skip if frame came too fast (> 120fps) — saves battery/CPU
+            if(dt<0.007){return;}
+            lastT=now;
+            _frameCount++;
+
             if(!G.isPaused&&G.matchActive){
               movePlayer(dt);
               moveBots(dt);
               tickGrens(dt);
               tickParticles(dt);
-              tickOcean(now);
-              tickCompanion(dt);
               tickBoosts(dt);
-              _checkTowerProximity();
-              updateMM();
-              updateCulling();
-              if(!G.isPractice&&CUR_USER)pushMyPos(now);
-              syncRemotePlayers();
+              // Throttle heavy tasks — run every other frame
+              if(_frameCount%2===0){
+                tickOcean(now);
+                updateCulling();
+                syncRemotePlayers();
+              }
+              // Run low-priority tasks every 8 frames
+              if(_frameCount%8===0){
+                tickCompanion(dt);
+                _checkTowerProximity();
+                updateMM();
+                if(!G.isPractice&&CUR_USER)pushMyPos(now);
+              }
             }
             if(playerGLBMixer)playerGLBMixer.update(dt);
-        if(gunGroup&&gunGroup._mixer)gunGroup._mixer.update(dt);
+            if(gunGroup&&gunGroup._mixer)gunGroup._mixer.update(dt);
             renderer.render(scene,camera);
-            animId=requestAnimationFrame(loop);
           }
           animId=requestAnimationFrame(loop);
         },200);
@@ -2366,9 +2461,20 @@ function setupOnline(lobbyData){
       }
     });
   });
-  // Listen for damage to me
+  // Listen for HP changes (hitscan damage via transaction)
+  let _myLastHp=100;
+  MATCH_REF.child('players/'+CUR_USER.uid+'/hp').on('value',snap=>{
+    const hp=snap.val();
+    if(hp===null||hp===undefined)return;
+    if(hp<_myLastHp){
+      const dmg=_myLastHp-hp;
+      playerHit(dmg);
+    }
+    _myLastHp=hp;
+  });
+  // Also keep legacy dmg node for fallback
   MATCH_REF.child('dmg/'+CUR_USER.uid).on('child_added',snap=>{
-    const v=snap.val();if(v)playerHit(v.d||10);
+    const v=snap.val();if(v){playerHit(v.d||10);}
     snap.ref.remove();
   });
   // Listen for match events (kills, eliminations)
@@ -2396,11 +2502,17 @@ function setupOnline(lobbyData){
   setTimeout(_applyTeamColors, 600);
 }
 
+let _lastSyncX=0,_lastSyncZ=0,_lastSyncA=0,_lastSyncHp=100;
 function pushMyPos(now){
-  if(now-lastSyncTime<100)return;  // 10 Hz
+  if(now-lastSyncTime<125)return; // 8 Hz max
+  if(!myPosRef||!pPos)return;
+  // Only sync if position/angle/hp changed meaningfully — saves Firebase writes
+  const dx=Math.abs(pPos.x-_lastSyncX),dz=Math.abs(pPos.z-_lastSyncZ);
+  const da=Math.abs(pAngle-_lastSyncA),dhp=Math.abs(pHealth-_lastSyncHp);
+  if(dx<0.05&&dz<0.05&&da<0.04&&dhp<1)return;
   lastSyncTime=now;
-  if(!myPosRef)return;
-  myPosRef.set({x:pPos.x,z:pPos.z,a:pAngle,name:UD.username||'Player',team:G.myTeam,hp:pHealth,kills:G.kills});
+  _lastSyncX=pPos.x;_lastSyncZ=pPos.z;_lastSyncA=pAngle;_lastSyncHp=pHealth;
+  myPosRef.set({x:Math.round(pPos.x*10)/10,z:Math.round(pPos.z*10)/10,a:Math.round(pAngle*100)/100,name:UD.username||'Player',team:G.myTeam,hp:Math.round(pHealth),kills:G.kills});
 }
 
 function syncRemotePlayers(){
@@ -2529,6 +2641,13 @@ function _grassMatForSize(w, d){
 function _addWall(x,z,hw,hd,h){_colliders.push({x,z,hw,hd,h,stair:false,floorY:0});}
 // Helper to register a climbable surface (stair/box top)
 function _addStep(x,z,hw,hd,floorY){_colliders.push({x,z,hw,hd,h:floorY+0.1,stair:true,floorY});}
+// Helper to register ceiling collider (prevents player going through roof)
+// ceilY = Y position of ceiling underside; hw/hd = half-extents of room
+function _addCeiling(x,z,hw,hd,ceilY){
+  // We repurpose the wall collider with a very small h slightly above ceiling
+  // The lowestCeiling logic in movePlayer reads col.h as ceiling base
+  _colliders.push({x,z,hw,hd,h:ceilY,stair:false,floorY:0,isCeiling:true});
+}
 
 function buildMap(){
   _colliders=[]; // clear previous game's colliders
@@ -2659,6 +2778,8 @@ function buildMap(){
     const roof=new T.Mesh(new T.CylinderGeometry(6.5,6.8,.5,8),mConcrD);
     roof.position.set(td.x,roofY+.25,td.z);scene.add(roof);
     _addStep(td.x,td.z,6,6,roofY+.5); // walkable roof surface
+    // Ceiling collider: prevent player jumping through from below
+    _addCeiling(td.x,td.z,6.4,6.4,roofY); // bottom of roof slab
     ring(goldR,td.x,roofY+.52,td.z,6.1,6.6,8);
 
     // ── Team-colored accent ring on roof edge ──────────────────────────────
@@ -2739,9 +2860,9 @@ function buildMap(){
   [[CX-10,CZ-2],[CX+10,CZ-2],[CX-2,CZ-10],[CX+2,CZ+10],[CX-22,CZ-2],[CX+22,CZ-2]
   ].forEach(([px,pz2])=>{
     const ry=Math.random()*.8;
-    // Solid wall collider for sides (player cannot enter crate)
-    _addWall(px,pz2,.62,.62,1.05);
-    // Also climbable top surface
+    // Solid wall for sides (player cannot walk through)
+    _addWall(px,pz2,.65,.65,1.05);
+    // Climbable top surface
     _addStep(px,pz2,.55,.55,1.0);
     const cm=new T.Mesh(new T.BoxGeometry(1.2,1,1.2),mCrate);
     cm.position.set(px,.5,pz2);cm.rotation.y=ry;scene.add(cm);
@@ -3178,34 +3299,42 @@ function buildPlayerMesh(){
 }
 
 // ─── GUN GLB MODELS ──────────────────────────────────────────────────────────
-let _gunGLBs={}; // cache: {ar: gltf, desert: gltf}
+let _gunGLBs={}; // cache: {ar, desert, hammer}
 
 function _loadGunGLBs(base){
   const GLTFLoader=(T&&T.GLTFLoader)||(window.THREE&&window.THREE.GLTFLoader);
   if(!GLTFLoader)return;
-  // gun.glb → used for AR (starting gun)
-  fetch(base+'gun.glb')
-    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
-    .then(buf=>new GLTFLoader().parse(buf,base,gltf=>{
-      _gunGLBs.ar=gltf;
-      console.log('✅ gun.glb loaded');
-      // If player is using AR right now, rebuild gun with GLB model
-      if(G.primaryWeapon==='AR'&&gunGroup)_replaceGunWithGLB('ar');
-    },()=>{}))
-    .catch(()=>console.warn('gun.glb not found'));
+
+  // minecraft_gun.glb → used for AR (primary gun)
+  _loadSingleGunGLB(base,'minecraft_gun.glb','minecraft',GLTFLoader,()=>{
+    if(G.primaryWeapon==='AR'&&gunGroup) _replaceGunWithGLB('minecraft');
+  });
+
+  // gun.glb → fallback AR if minecraft_gun.glb not found
+  _loadSingleGunGLB(base,'gun.glb','ar',GLTFLoader,()=>{
+    if(G.primaryWeapon==='AR'&&gunGroup&&!_gunGLBs.minecraft) _replaceGunWithGLB('ar');
+  });
 
   // eagle_gun.glb → Desert Eagle
-  fetch(base+'eagle_gun.glb')
-    .then(r=>r.ok?r.arrayBuffer():Promise.reject())
+  _loadSingleGunGLB(base,'eagle_gun.glb','desert',GLTFLoader,()=>{
+    if((G.primaryWeapon==='Desert'||G.secondaryWeapon==='Desert')&&gunGroup) _replaceGunWithGLB('desert');
+  });
+
+  // hammer.glb → Hammer melee weapon
+  _loadSingleGunGLB(base,'hammer.glb','hammer',GLTFLoader,()=>{
+    if(G.primaryWeapon==='Hammer'&&gunGroup) _replaceGunWithGLB('hammer');
+  });
+}
+
+function _loadSingleGunGLB(base,filename,key,GLTFLoader,onLoaded){
+  fetch(base+filename)
+    .then(r=>r.ok?r.arrayBuffer():Promise.reject(filename+' missing'))
     .then(buf=>new GLTFLoader().parse(buf,base,gltf=>{
-      _gunGLBs.desert=gltf;
-      console.log('✅ eagle_gun.glb loaded');
-      // Replace if Desert Eagle currently equipped (primary OR secondary)
-      if((G.primaryWeapon==='Desert'||G.secondaryWeapon==='Desert')&&gunGroup){
-        _replaceGunWithGLB('desert');
-      }
-    },()=>{}))
-    .catch(()=>console.warn('eagle_gun.glb not found'));
+      _gunGLBs[key]=gltf;
+      console.log('✅ '+filename+' loaded');
+      onLoaded();
+    },err=>console.warn(filename+' parse error:',err)))
+    .catch(e=>console.warn('⚠',e));
 }
 
 function _replaceGunWithGLB(key){
@@ -3263,28 +3392,38 @@ function _replaceGunWithGLB(key){
   const ctr=bb2.getCenter(new T.Vector3());
   mdl.position.sub(ctr);
 
-  // Orient: detect which axis is longest and rotate barrel to face -Z (forward)
-  // Try multiple rotations — GLBs vary wildly in export orientation
-  // We rotate the model group, not individual meshes
+  // Orient based on weapon key and dominant axis
   const domAxis = sz.x > sz.y && sz.x > sz.z ? 'x' :
                   sz.y > sz.x && sz.y > sz.z ? 'y' : 'z';
-  // Reset any previous rotation
   mdl.rotation.set(0, 0, 0);
-  if(domAxis === 'x'){
-    // Barrel along X → rotate -90° around Y so X becomes -Z (forward)
-    mdl.rotation.y = -Math.PI / 2;
-  } else if(domAxis === 'y'){
-    // Barrel along Y → rotate 90° around X so Y becomes -Z
-    mdl.rotation.x = Math.PI / 2;
-  }
-  // If domAxis === 'z', model already faces correct axis; check if needs 180° flip
-  // Heuristic: if barrel tip is at positive Z, flip 180° around Y
-  // We always add 180° for gun.glb (known to be backwards)
-  if(key === 'ar') mdl.rotation.y += Math.PI;
 
-  // Reset group to standard first-person position
-  gunGroup.position.set(.19,-.21,-.42);
-  gunGroup.rotation.set(0,.04,0);
+  if(key === 'hammer'){
+    // Hammer handle typically along Y, head should point forward (-Z)
+    if(domAxis === 'y') mdl.rotation.x = -Math.PI/2;
+    else if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
+    // Slight tilt for natural hammer hold
+    mdl.rotation.z = 0.1;
+    gunGroup.position.set(.16, -.14, -.28);
+  } else if(key === 'minecraft' || key === 'ar'){
+    // Minecraft gun / AR: barrel forward
+    if(domAxis === 'x') mdl.rotation.y = Math.PI/2;
+    else if(domAxis === 'y') mdl.rotation.x = Math.PI/2;
+    // Apply 180° flip — most gun GLBs export facing +Z, we need -Z
+    mdl.rotation.y += Math.PI;
+    gunGroup.position.set(.19, -.21, -.42);
+  } else if(key === 'desert'){
+    // Desert Eagle
+    if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
+    mdl.rotation.y += Math.PI;
+    gunGroup.position.set(.19, -.21, -.32);
+  } else {
+    // Generic fallback
+    if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
+    else if(domAxis === 'y') mdl.rotation.x = Math.PI/2;
+    mdl.rotation.y += Math.PI;
+    gunGroup.position.set(.19, -.21, -.42);
+  }
+  gunGroup.rotation.set(0, .04, 0);
 
   gunGroup.add(mdl);
 
@@ -3455,9 +3594,15 @@ function buildGun(){
   camera.add(gunGroup);
   if(!scene.children.includes(camera))scene.add(camera);
 
-  // If a GLB is already loaded for this weapon, replace procedural model now
-  if(wk==='AR'&&_gunGLBs.ar) setTimeout(()=>_replaceGunWithGLB('ar'),0);
-  else if(wk==='Desert'&&_gunGLBs.desert) setTimeout(()=>_replaceGunWithGLB('desert'),0);
+  // If GLBs already loaded, replace procedural model immediately
+  if(wk==='AR'){
+    if(_gunGLBs.minecraft) setTimeout(()=>_replaceGunWithGLB('minecraft'),0);
+    else if(_gunGLBs.ar)   setTimeout(()=>_replaceGunWithGLB('ar'),0);
+  } else if(wk==='Desert'&&_gunGLBs.desert){
+    setTimeout(()=>_replaceGunWithGLB('desert'),0);
+  } else if(wk==='Hammer'&&_gunGLBs.hammer){
+    setTimeout(()=>_replaceGunWithGLB('hammer'),0);
+  }
 }
 
 // ─── BOTS ────────────────────────────────────────────────────────────────────
@@ -3659,47 +3804,73 @@ function movePlayer(dt){
   if(spd>maxSpd){velX=velX/spd*maxSpd;velZ=velZ/spd*maxSpd;}
 
   // ── 3D Collision + world bounds ──────────────────────────────────────────
-  const PR=0.32; // player radius
+  const PR=0.30;
+  const PLAYER_H=1.6;
   const nx=pPos.x+velX, nz=pPos.z+velZ;
 
-  // Check AABB colliders — separate X and Z for sliding along walls
   let canMoveX=true, canMoveZ=true;
-  let highestFloor=0.0; // ground floor is at Y=0
+  let highestFloor=0.0;
+  let lowestCeiling=999.0;
 
   for(const col of _colliders){
     const playerBottom = pPos.y;
-    const playerTop    = pPos.y + 1.6;
+    const playerTop    = pPos.y + PLAYER_H;
 
     if(col.stair){
-      // Climbable surface: raise player's floor if inside XZ footprint
-      const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.05;
-      const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.05;
-      if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.2){
+      // Climbable step: check XZ overlap, raise floor
+      const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.08;
+      const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.08;
+      if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.3){
         highestFloor=col.floorY;
       }
+    } else if(col.isCeiling){
+      // Pure ceiling slab — only check XZ overlap and cap upward movement
+      const inXc=Math.abs(pPos.x-col.x)<col.hw;
+      const inZc=Math.abs(pPos.z-col.z)<col.hd;
+      if(inXc&&inZc&&col.h<lowestCeiling){
+        lowestCeiling=col.h;
+      }
     } else {
-      // Solid wall: block XZ movement only when player vertically overlaps the SIDE
-      // Key fix: if player is standing ON TOP of this collider (feet >= top surface),
-      // do NOT block XZ — player should be able to walk freely on top
-      const colTopY = col.h; // top of collider
-      const playerOnTop = playerBottom >= colTopY - 0.12; // within 12cm of top
-      if(!playerOnTop && playerBottom < col.h && playerTop > 0.05){
+      // Solid wall/box
+      const colTop = col.h;
+      // Skip if player is entirely above or below this collider
+      if(playerBottom>=colTop||playerTop<=0) continue;
+
+      // XZ AABB overlap check (current position)
+      const inXp=Math.abs(pPos.x-col.x)<col.hw+PR;
+      const inZp=Math.abs(pPos.z-col.z)<col.hd+PR;
+
+      // Player standing ON TOP — treat as floor, allow free XZ movement
+      if(playerBottom>=colTop-0.18&&inXp&&inZp){
+        if(colTop>highestFloor) highestFloor=colTop;
+        continue;
+      }
+
+      // Ceiling from below (player top hits underside while jumping)
+      if(playerTop>colTop&&playerBottom<colTop&&inXp&&inZp&&pVelY>0){
+        if(colTop<lowestCeiling) lowestCeiling=colTop;
+        continue;
+      }
+
+      // Side collision — test proposed X and Z separately for wall sliding
+      if(playerBottom<colTop&&playerTop>0){
         const dxTest=Math.abs(nx-col.x)-col.hw-PR;
         const dzTest=Math.abs(pPos.z-col.z)-col.hd-PR;
-        if(dxTest<0&&dzTest<0)canMoveX=false;
+        if(dxTest<0&&dzTest<0) canMoveX=false;
+
         const dxTestZ=Math.abs(pPos.x-col.x)-col.hw-PR;
         const dzTestZ=Math.abs(nz-col.z)-col.hd-PR;
-        if(dxTestZ<0&&dzTestZ<0)canMoveZ=false;
+        if(dxTestZ<0&&dzTestZ<0) canMoveZ=false;
       }
     }
   }
 
-  // Also check legacy map grid walls
-  if(isWall(nx+PR,pPos.z)||isWall(nx-PR,pPos.z))canMoveX=false;
-  if(isWall(pPos.x,nz+PR)||isWall(pPos.x,nz-PR))canMoveZ=false;
+  // Legacy map-grid wall check
+  if(isWall(nx+PR,pPos.z)||isWall(nx-PR,pPos.z)) canMoveX=false;
+  if(isWall(pPos.x,nz+PR)||isWall(pPos.x,nz-PR)) canMoveZ=false;
 
-  if(canMoveX)pPos.x=nx; else velX=0;
-  if(canMoveZ)pPos.z=nz; else velZ=0;
+  if(canMoveX) pPos.x=nx; else velX=0;
+  if(canMoveZ) pPos.z=nz; else velZ=0;
 
   // Circular boundary
   const CX=MAP_CX*CS, CZ=MAP_CZ*CS;
@@ -3708,12 +3879,21 @@ function movePlayer(dt){
   const SHORE=MAP_R*CS-2.0;
   if(pd>SHORE){pPos.x=CX+pdx/pd*SHORE;pPos.z=CZ+pdz/pd*SHORE;}
 
-  // ── Gravity + jump + stair stepping ──────────────────────────────────────
-  pVelY+=GRAV*dt; pPos.y+=pVelY*dt;
+  // ── Gravity + floor + ceiling ─────────────────────────────────────────────
+  pVelY+=GRAV*dt;
+  pPos.y+=pVelY*dt;
+
+  // Floor: don't fall below highest surface beneath us
   if(pPos.y<=highestFloor){pPos.y=highestFloor;pVelY=0;}
 
+  // Ceiling: don't go above lowest ceiling above us
+  if(lowestCeiling<999&&pPos.y+PLAYER_H>lowestCeiling){
+    pPos.y=lowestCeiling-PLAYER_H-0.02;
+    if(pVelY>0)pVelY=0; // kill upward velocity on ceiling hit
+  }
+
   const moving=spd>0.001;
-  const isJumping=pPos.y>0.15; // jumping when feet are above 0.15
+  const isJumping=pPos.y>0.15; // jumping when feet above 0.15
 
   // ── Player GLB animation state machine (crossfade) ────────────────────
   if(playerGLBMixer&&playerGLBModel){
@@ -3945,85 +4125,61 @@ function doMeleeSwing(){
   setTimeout(()=>{G.isShooting=false;},280); // swing cooldown
 }
 
+// ─── HITSCAN RAYCASTER (shared instance for performance) ─────────────────────
+const _raycaster = new (T?.Raycaster || class{})();
+let _rayOrigin = null, _rayDir = null;
+function _initRaycaster(){
+  if(!T)return;
+  _rayOrigin = new T.Vector3();
+  _rayDir    = new T.Vector3();
+}
+
 function fireOnce(){
-  if(_isMelee()){doMeleeSwing();return;} // safety guard
+  if(_isMelee()){doMeleeSwing();return;}
   if(G.ammo<=0){doReload();return;}
   if(G.isReloading)return;
+
   G.ammo--;G.isShooting=true;updateHUD();
   if(muzzleFlash)muzzleFlash.material.opacity=1;
   if(muzzleLight)muzzleLight.intensity=3.5;
-  pPitch-=.022;setTimeout(()=>{pPitch+=.014;G.isShooting=false;},75);
+  pPitch-=.018;setTimeout(()=>{pPitch+=.012;G.isShooting=false;},70);
 
   const wd=WD[G.primaryWeapon];
-  const sp=G.isAiming?wd.spread*.25:wd.spread;
+  const sp=G.isAiming?wd.spread*.2:wd.spread;
 
-  // Shoot origin: at eye level in front of player
-  const ox=pPos.x+(-Math.sin(pAngle))*0.4;
-  const oy=pPos.y+1.55; // eye height (foot + 1.55)
-  const oz=pPos.z+(-Math.cos(pAngle))*0.4;
+  // ── Hitscan: build ray from camera (eye) position ────────────────────────
+  if(!_rayOrigin){_initRaycaster();}
 
-  // Shoot direction: camera forward + pitch + spread
+  const eyeX=pPos.x, eyeY=pPos.y+1.55, eyeZ=pPos.z;
   const spreadX=(Math.random()-.5)*sp*2;
   const spreadY=(Math.random()-.5)*sp;
   const dirX=-Math.sin(pAngle)*Math.cos(pPitch)+spreadX;
   const dirY=-Math.sin(pPitch)+spreadY;
   const dirZ=-Math.cos(pAngle)*Math.cos(pPitch);
   const dl=Math.sqrt(dirX*dirX+dirY*dirY+dirZ*dirZ);
-  const ndx=dirX/dl, ndy=dirY/dl, ndz=dirZ/dl;
 
-  // Hit detection: 2D horizontal ray (XZ plane) + height range check
-  // Much more reliable than full 3D on mobile — pitch angle doesn't cause misses
-  function checkHit(tx,ty,tz,radius){
-    const dist2D=Math.sqrt((tx-ox)**2+(tz-oz)**2);
-    if(dist2D>80) return false;
-    // Height check — is the target within 2m vertically of shoot origin?
-    if(Math.abs(ty-oy)>2.5) return false;
-    // 2D ray direction (horizontal only)
-    const r2d=Math.sqrt(ndx*ndx+ndz*ndz);
-    if(r2d<0.001) return false;
-    const n2x=ndx/r2d, n2z=ndz/r2d;
-    // Vector from origin to target (horizontal)
-    const vx=tx-ox, vz=tz-oz;
-    // Project onto 2D ray
-    const dot2=vx*n2x+vz*n2z;
-    if(dot2<0) return false; // behind shooter
-    // Perpendicular distance in 2D
-    const px=ox+n2x*dot2, pz=oz+n2z*dot2;
-    const perp=Math.sqrt((tx-px)**2+(tz-pz)**2);
-    return perp<radius;
-  }
+  _rayOrigin.set(eyeX,eyeY,eyeZ);
+  _rayDir.set(dirX/dl,dirY/dl,dirZ/dl);
 
-  // ── Hit bots ──────────────────────────────────────────────────────────────
-  let bestBot=null,bestD=80;
+  // ── Hit bots (local, immediate) ───────────────────────────────────────────
+  let hit=false;
+  const RAY_LEN=80;
+  let bestBot=null, bestBotDist=RAY_LEN;
+
   bots.forEach(b=>{
     if(!b.alive||!b.mesh)return;
-    // Use actual mesh position for accuracy
-    const bx=b.mesh.position.x, bz=b.mesh.position.z;
-    const by=b.mesh.position.y+0.9; // chest height
-    if(checkHit(bx,by,bz,0.9)){
-      const d=Math.sqrt((bx-ox)**2+(bz-oz)**2);
-      if(d<bestD){bestD=d;bestBot=b;}
-    }
+    const bx=b.mesh.position.x, by=b.mesh.position.y+1.0, bz=b.mesh.position.z;
+    const dist=_rayHitSphere(eyeX,eyeY,eyeZ,dirX/dl,dirY/dl,dirZ/dl,bx,by,bz,0.55);
+    if(dist>0&&dist<bestBotDist){bestBotDist=dist;bestBot=b;}
   });
+
   if(bestBot){
+    hit=true;
     const dmg=wd.dmg*(G.isAiming?1.22:1);
     bestBot.health-=dmg;showDmgNum(Math.floor(dmg));
-    // Blood/flesh particles at hit point
-    const hx=bestBot.mesh.position.x;
-    const hz=bestBot.mesh.position.z;
-    const hy=bestBot.mesh.position.y+0.9;
+    const hx=bestBot.mesh.position.x,hz=bestBot.mesh.position.z,hy=bestBot.mesh.position.y+1.0;
     spawnImpactParticles(hx,hy,hz,'flesh');
-    // Flash red briefly, then restore original colour
-    bestBot.mesh.traverse(n=>{
-      if(!n.isMesh||!n.material||n.name==='hbBg'||n.name==='hbFg')return;
-      const mats=Array.isArray(n.material)?n.material:[n.material];
-      mats.forEach(m=>{
-        if(!m.color)return;
-        const orig=m.color.clone();
-        m.color.set(0xff3333);
-        setTimeout(()=>{if(m&&m.color)m.color.copy(orig);},110);
-      });
-    });
+    _flashMesh(bestBot.mesh);
     if(bestBot.health<=0){
       bestBot.alive=false;
       if(bestBot.mesh){
@@ -4031,54 +4187,80 @@ function fireOnce(){
         setTimeout(()=>{if(scene&&bestBot.mesh){scene.remove(bestBot.mesh);bestBot.mesh=null;}},3000);
       }
       G.kills++;G.scoreBlue++;updateHUD();showKillFx();addKF('You','Bot');
-      earnCoins(2); // bot kill = 2 coins
-      compMsg(COMPANION_MSGS.botKill,true);
-      giveXP(50);
+      earnCoins(2);compMsg(COMPANION_MSGS.botKill,true);giveXP(50);
       if(bots.every(b=>!b.alive))setTimeout(()=>{respawnBots();updateHUD();},5000);
     }
   }
 
-  // ── Hit online players ─────────────────────────────────────────────────────
-  Object.entries(onlinePlayers).forEach(([uid,op])=>{
-    if(!op.mesh)return;
-    const p=op.mesh.position;
-    if(checkHit(p.x,p.y+0.9,p.z,0.6)){
-      const dmg=wd.dmg*(G.isAiming?1.22:1);
-      MATCH_REF?.child('dmg/'+uid).push({d:Math.floor(dmg),from:CUR_USER?.uid});
-      showDmgNum(Math.floor(dmg));G.kills++;G.scoreBlue++;updateHUD();showKillFx();addKF('You',op.data?.name||'Player');
-      earnCoins(5); // player kill = 5 coins
-      compMsg(COMPANION_MSGS.playerKill,true);
-      giveXP(80);
-    }
-  });
-
-  if(G.ammo===0)setTimeout(doReload,200);
-
-  // ── Wall / ground impact particles when no enemy hit ─────────────────────
-  if(!bestBot&&Object.keys(onlinePlayers).length===0||!bestBot){
-    // Step along the ray until we hit a wall or ground
-    const MAX_DIST=60, STEP=0.5;
-    let hit=false;
-    for(let s=2;s<MAX_DIST;s+=STEP){
-      const rx=ox+ndx*s, ry=oy+ndy*s, rz=oz+ndz*s;
-      // Hit ground
-      if(ry<=0.05){
-        spawnImpactParticles(rx,0.05,rz,'ground');
-        hit=true;break;
+  // ── Hit online players (Firebase transaction, low-latency) ───────────────
+  if(!hit){
+    Object.entries(onlinePlayers).forEach(([uid,op])=>{
+      if(!op.mesh||hit)return;
+      const p=op.mesh.position;
+      const dist=_rayHitSphere(eyeX,eyeY,eyeZ,dirX/dl,dirY/dl,dirZ/dl,p.x,p.y+1.0,p.z,0.55);
+      if(dist>0&&dist<RAY_LEN){
+        hit=true;
+        const dmg=Math.floor(wd.dmg*(G.isAiming?1.22:1));
+        showDmgNum(dmg);
+        // Apply damage via Firebase transaction (prevents race conditions)
+        if(MATCH_REF){
+          MATCH_REF.child('players/'+uid+'/hp').transaction(hp=>{
+            return Math.max(0,(hp||100)-dmg);
+          });
+          // Log the shot for kill feed
+          MATCH_REF.child('shots').push({
+            from:CUR_USER?.uid||'guest',
+            to:uid,
+            dmg,
+            t:Date.now()
+          });
+        }
+        G.kills++;G.scoreBlue++;updateHUD();showKillFx();
+        addKF('You',op.data?.name||'Player');
+        earnCoins(5);compMsg(COMPANION_MSGS.playerKill,true);giveXP(80);
       }
-      // Hit wall/building
-      if(isWall(rx,rz)){
-        spawnImpactParticles(rx,Math.max(0.1,ry),rz,'wall');
-        hit=true;break;
-      }
-    }
-    // Fallback: always spawn ground impact if ray goes very far
-    if(!hit){
-      const rx=ox+ndx*30, rz=oz+ndz*30;
-      spawnImpactParticles(rx,0.05,rz,'ground');
-    }
+    });
   }
-} // end fireOnce
+
+  // ── Wall/ground impact particles ─────────────────────────────────────────
+  if(!hit){
+    let wx=eyeX,wy=eyeY,wz=eyeZ,wHit=false;
+    const STEP=0.8;
+    for(let s=2;s<RAY_LEN;s+=STEP){
+      wx=eyeX+dirX/dl*s; wy=eyeY+dirY/dl*s; wz=eyeZ+dirZ/dl*s;
+      if(wy<=0.05){spawnImpactParticles(wx,0.05,wz,'ground');wHit=true;break;}
+      if(isWall(wx,wz)){spawnImpactParticles(wx,Math.max(0.1,wy),wz,'wall');wHit=true;break;}
+    }
+    if(!wHit) spawnImpactParticles(eyeX+dirX/dl*30,0.05,eyeZ+dirZ/dl*30,'ground');
+  }
+
+  if(G.ammo===0) setTimeout(doReload,200);
+}
+
+// Fast sphere intersection test for hitscan
+// Returns distance to hit, or -1 if miss
+function _rayHitSphere(ox,oy,oz,dx,dy,dz,sx,sy,sz,r){
+  const lx=sx-ox,ly=sy-oy,lz=sz-oz;
+  const tca=lx*dx+ly*dy+lz*dz;
+  if(tca<0)return -1;
+  const d2=lx*lx+ly*ly+lz*lz-tca*tca;
+  if(d2>r*r)return -1;
+  return tca-Math.sqrt(r*r-d2);
+}
+
+function _flashMesh(mesh){
+  if(!mesh)return;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.material||n.name==='hbBg'||n.name==='hbFg')return;
+    const mats=Array.isArray(n.material)?n.material:[n.material];
+    mats.forEach(m=>{
+      if(!m.color)return;
+      const orig=m.color.clone();
+      m.color.set(0xff3333);
+      setTimeout(()=>{if(m&&m.color)m.color.copy(orig);},100);
+    });
+  });
+}
 
 // ─── BULLET IMPACT PARTICLES ─────────────────────────────────────────────────
 let _particles=[];  // active particle groups
@@ -4575,13 +4757,30 @@ function afterLoginThenLobby(){
   });
 }
 function _goLobbyNow(){
-  const ref=db.ref('lobbies').push();
-  LOBBY_ID=ref.key; LOBBY_REF=ref; IS_HOST=true;
-  document.getElementById('lobCode').textContent=LOBBY_ID.slice(-6).toUpperCase();
+  const code=_genLobbyCode();
+  LOBBY_ID=code;
+  LOBBY_REF=db.ref('lobbies/'+code);
+  IS_HOST=true;
+  document.getElementById('lobCode').textContent=code;
   document.getElementById('hostStartBtn').style.display='block';
-  ref.child('players/'+CUR_USER.uid).set({uid:CUR_USER.uid,name:UD.username||'Player',level:UD.level||1,team:'blue',host:true});
-  ref.child('players/'+CUR_USER.uid).onDisconnect().remove();
-  ref.child('status').set('waiting');
+  LOBBY_REF.set({
+    host:CUR_USER.uid,
+    status:'waiting',
+    createdAt:Date.now(),
+    players:{
+      [CUR_USER.uid]:{
+        uid:CUR_USER.uid,
+        name:UD.username||'Player',
+        level:UD.level||1,
+        team:'blue',
+        hp:100,
+        host:true
+      }
+    }
+  });
+  LOBBY_REF.child('players/'+CUR_USER.uid).onDisconnect().remove();
+  // Auto-cleanup empty lobby after 1 hour
+  LOBBY_REF.onDisconnect().remove();
   listenLobby();
   showScr('lobbyScreen');
 }
