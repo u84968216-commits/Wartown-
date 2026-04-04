@@ -1517,39 +1517,67 @@ function listenLobby(){
     const data=snap.val();
     renderLobbyPlayers(data.players||{});
     document.getElementById('lobCode').textContent=LOBBY_ID;
-    if(data.status==='go'){
+
+    if(data.status==='countdown'){
+      const cd=typeof data.countdown==='number'?data.countdown:10;
+      _showLobbyCountdown(cd);
+    } else if(data.status==='go'){
       G.myTeam=(data.players?.[CUR_USER?.uid]?.team)||'blue';
       LOBBY_REF.off();
+      _hideLobbyCountdown();
       startOnlineGame(data);
+    } else {
+      _hideLobbyCountdown();
     }
   });
 }
 
-function renderLobbyPlayers(players){
-  const blue=[],red=[];
-  Object.values(players).forEach(p=>(p.team==='red'?red:blue).push(p));
-  const slot=p=>`<div class="pslot"><div class="psav">${(p.name||'?')[0].toUpperCase()}</div><div><div class="psn">${p.name||'?'}${p.host?' 👑':''}</div><div class="psl">Lv ${p.level||1} · HP ${p.hp||100}</div></div></div>`;
-  const empty='<div class="pslot"><div class="psav" style="opacity:.2">+</div><div class="eslt">Waiting...</div></div>';
-  document.getElementById('blueSlots').innerHTML=blue.map(slot).join('')+Array(Math.max(0,5-blue.length)).fill(empty).join('');
-  document.getElementById('redSlots').innerHTML=red.map(slot).join('')+Array(Math.max(0,5-red.length)).fill(empty).join('');
-  const total=Object.keys(players).length;
-  const sb=document.getElementById('lobStat');
-  sb.textContent=total+' player'+(total!==1?'s':'')+' connected'+(total>=2?' — Ready!':'');
-  sb.className='statbar'+(total>=2?' rdy':'');
+function _showLobbyCountdown(sec){
+  let el=document.getElementById('lobCountdown');
+  if(!el){
+    el=document.createElement('div');
+    el.id='lobCountdown';
+    el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;pointer-events:none;';
+    el.innerHTML='<div style="font-size:clamp(16px,4vw,22px);font-weight:900;color:#ff6b35;letter-spacing:4px;text-transform:uppercase;">MATCH STARTING</div>'
+      +'<div id="lobCdNum" style="font-size:clamp(60px,18vw,100px);font-weight:900;color:#fff;text-shadow:0 0 60px rgba(255,107,53,.9);line-height:1;"></div>'
+      +'<div style="font-size:clamp(10px,2.5vw,14px);color:rgba(255,255,255,.5);letter-spacing:3px;text-transform:uppercase;">Get Ready!</div>';
+    document.body.appendChild(el);
+  }
+  el.style.display='flex';
+  const numEl=document.getElementById('lobCdNum');
+  if(numEl) numEl.textContent=sec;
+}
+function _hideLobbyCountdown(){
+  const el=document.getElementById('lobCountdown');
+  if(el) el.style.display='none';
 }
 
 function hostStartMatch(){
-  if(!IS_HOST)return;
+  if(!IS_HOST){toast('Only the host can start!');return;}
   LOBBY_REF.child('players').once('value').then(snap=>{
     const pl=snap.val()||{};
-    const keys=Object.keys(pl);
-    if(keys.length<1){toast('Need at least 1 player!');return;}
-    // Assign teams alternately
+    const pkeys=Object.keys(pl);
+    if(pkeys.length<1){toast('Need at least 1 player!');return;}
+    // Assign teams alternately, alternating blue/red
     const upd={};
-    keys.forEach((k,i)=>{upd[k+'/team']=i%2===0?'blue':'red';});
-    LOBBY_REF.child('players').update(upd).then(()=>{
-      LOBBY_REF.child('status').set('go');
+    pkeys.forEach((k,i)=>{
+      upd['players/'+k+'/team']=i%2===0?'blue':'red';
     });
+    upd['status']='countdown';
+    upd['countdown']=10;
+    LOBBY_REF.update(upd).then(()=>{
+      // Host drives the countdown
+      let cd=10;
+      const cdInt=setInterval(()=>{
+        cd--;
+        if(cd<=0){
+          clearInterval(cdInt);
+          LOBBY_REF.update({status:'go',countdown:0});
+        } else {
+          LOBBY_REF.child('countdown').set(cd);
+        }
+      },1000);
+    }).catch(e=>toast('Start failed: '+e.message));
   });
 }
 
@@ -2216,6 +2244,20 @@ function startPractice(){
 
 function startOnlineGame(lobbyData){
   G.isPractice=false;
+  // Write initial HP=100 to match path so HP transactions work
+  if(CUR_USER&&LOBBY_ID){
+    const matchRef=db.ref('matches/'+LOBBY_ID);
+    matchRef.child('players/'+CUR_USER.uid).set({
+      uid:CUR_USER.uid,
+      name:UD.username||'Player',
+      team:G.myTeam,
+      hp:100,
+      kills:0
+    });
+    matchRef.child('players/'+CUR_USER.uid).onDisconnect().remove();
+    // Match cleanup on disconnect
+    if(IS_HOST) matchRef.onDisconnect().remove();
+  }
   initGame(lobbyData);
 }
 
@@ -2461,20 +2503,43 @@ function setupOnline(lobbyData){
       }
     });
   });
-  // Listen for HP changes (hitscan damage via transaction)
+  // Listen for MY HP changes (damage from other players via transaction)
   let _myLastHp=100;
-  MATCH_REF.child('players/'+CUR_USER.uid+'/hp').on('value',snap=>{
+  const _hpRef=MATCH_REF.child('matches/'+LOBBY_ID+'/players/'+CUR_USER.uid+'/hp');
+  _hpRef.on('value',snap=>{
     const hp=snap.val();
     if(hp===null||hp===undefined)return;
-    if(hp<_myLastHp){
-      const dmg=_myLastHp-hp;
-      playerHit(dmg);
+    const hpNum=typeof hp==='number'?hp:100;
+    if(hpNum<_myLastHp&&hpNum>=0){
+      const dmg=_myLastHp-hpNum;
+      if(dmg>0) playerHit(dmg);
     }
-    _myLastHp=hp;
+    _myLastHp=hpNum;
+    // Update HUD HP in real-time
+    pHealth=hpNum;
+    updateHUD();
+  });
+  // Listen for kill events (for kill feed)
+  MATCH_REF.child('matches/'+LOBBY_ID+'/events').limitToLast(5).on('child_added',snap=>{
+    const ev=snap.val();
+    if(!ev)return;
+    if(ev.type==='kill'){
+      addKF(ev.killerName||'Player',ev.victimName||'Player');
+      if(ev.victim===CUR_USER?.uid&&!ev._processed){
+        // I was killed
+        snap.ref.update({_processed:true});
+      }
+    }
+    if(ev.type==='death'&&ev.team!==G.myTeam){
+      teamAlert('☠️ '+(ev.name||'Enemy')+' eliminated','good');
+    }
+    if(ev.type==='towerAttack'&&ev.team===G.myTeam){
+      teamAlert('🏰 YOUR TOWER IS UNDER ATTACK!','danger');
+    }
   });
   // Also keep legacy dmg node for fallback
   MATCH_REF.child('dmg/'+CUR_USER.uid).on('child_added',snap=>{
-    const v=snap.val();if(v){playerHit(v.d||10);}
+    const v=snap.val();if(v) playerHit(v.d||10);
     snap.ref.remove();
   });
   // Listen for match events (kills, eliminations)
@@ -2799,33 +2864,42 @@ function buildMap(){
       ring(goldR,sx,.16,sz,1.9,2.2,16);
     });
 
-    // ── EXTERNAL STAIRS up the outside — spiral from ground to roof ────────
-    // Direction of stairs: face toward center so player naturally approaches
+    // ── EXTERNAL STAIRS up the outside — solid ramp to roof ────────────────
     const stairFaceAng=Math.atan2(CZ-td.z,CX-td.x);
-    // Stairs go up the SIDE of the tower, 10 steps from y=0 to roofY
-    const STEPS=10;
+    const STEPS=12; // More steps = smoother ramp
     for(let s=0;s<STEPS;s++){
       const t01=s/(STEPS-1);
-      // Start from outside edge, sweep around to the top
-      const stairAng=stairFaceAng + (s/STEPS)*Math.PI*0.6 - Math.PI*0.3;
-      const stairR=6.8; // just outside tower base
+      const stairAng=stairFaceAng+(s/STEPS)*Math.PI*0.55-Math.PI*0.275;
+      const stairR=6.6;
       const sx2=td.x+Math.cos(stairAng)*stairR;
       const sz2=td.z+Math.sin(stairAng)*stairR;
-      const sy=t01*roofY + 0.15; // rises from 0 to roofY
-      const stepW=1.8, stepD=0.9, stepH=0.22;
+      const sy=t01*roofY+0.12;
+      // Wider, deeper steps so player never misses
+      const stepW=2.4, stepD=1.2, stepH=0.25;
 
       const step=new T.Mesh(new T.BoxGeometry(stepW,stepH,stepD),mConcrete);
       step.position.set(sx2,sy,sz2);
       step.rotation.y=stairAng+Math.PI/2;
       scene.add(step);
-      // Register as climbable step
-      _addStep(sx2,sz2,stepW/2,stepD/2,sy+stepH/2);
+      // Register WIDE climbable step — bigger radius so player always catches it
+      _addStep(sx2,sz2,stepW/2+0.2,stepD/2+0.2,sy+stepH/2);
 
-      // Railing post on outer edge of each step
-      const railX=sx2+Math.cos(stairAng)*.7;
-      const railZ=sz2+Math.sin(stairAng)*.7;
-      const post=new T.Mesh(new T.CylinderGeometry(.04,.04,.5,4),goldR);
-      post.position.set(railX,sy+.35,railZ);scene.add(post);
+      // Railing post
+      const railX=sx2+Math.cos(stairAng)*.9;
+      const railZ=sz2+Math.sin(stairAng)*.9;
+      const post=new T.Mesh(new T.CylinderGeometry(.05,.05,.6,4),goldR);
+      post.position.set(railX,sy+.4,railZ);scene.add(post);
+    }
+    // Also register the WHOLE stair arc as a continuous ramp surface
+    // This ensures no gap between individual steps
+    for(let s=0;s<STEPS-1;s++){
+      const t0=s/(STEPS-1), t1=(s+1)/(STEPS-1);
+      const a0=stairFaceAng+(s/STEPS)*Math.PI*0.55-Math.PI*0.275;
+      const a1=stairFaceAng+((s+1)/STEPS)*Math.PI*0.55-Math.PI*0.275;
+      const mx=(td.x+Math.cos(a0)*6.6+td.x+Math.cos(a1)*6.6)/2;
+      const mz=(td.z+Math.sin(a0)*6.6+td.z+Math.sin(a1)*6.6)/2;
+      const sy=(t0+t1)/2*roofY+0.12;
+      _addStep(mx,mz,0.8,0.8,sy+0.12); // gap-filler between steps
     }
 
     // ── STATUE on roof (accessible by climbing stairs) ─────────────────────
@@ -3392,38 +3466,52 @@ function _replaceGunWithGLB(key){
   const ctr=bb2.getCenter(new T.Vector3());
   mdl.position.sub(ctr);
 
-  // Orient based on weapon key and dominant axis
-  const domAxis = sz.x > sz.y && sz.x > sz.z ? 'x' :
-                  sz.y > sz.x && sz.y > sz.z ? 'y' : 'z';
-  mdl.rotation.set(0, 0, 0);
+  // ── Orient gun model to face forward (-Z direction = into screen) ────────
+  // Reset scale/rotation first
+  mdl.rotation.set(0,0,0);
+  mdl.updateMatrixWorld(true);
 
-  if(key === 'hammer'){
-    // Hammer handle typically along Y, head should point forward (-Z)
-    if(domAxis === 'y') mdl.rotation.x = -Math.PI/2;
-    else if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
-    // Slight tilt for natural hammer hold
-    mdl.rotation.z = 0.1;
-    gunGroup.position.set(.16, -.14, -.28);
-  } else if(key === 'minecraft' || key === 'ar'){
-    // Minecraft gun / AR: barrel forward
-    if(domAxis === 'x') mdl.rotation.y = Math.PI/2;
-    else if(domAxis === 'y') mdl.rotation.x = Math.PI/2;
-    // Apply 180° flip — most gun GLBs export facing +Z, we need -Z
-    mdl.rotation.y += Math.PI;
-    gunGroup.position.set(.19, -.21, -.42);
-  } else if(key === 'desert'){
-    // Desert Eagle
-    if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
-    mdl.rotation.y += Math.PI;
-    gunGroup.position.set(.19, -.21, -.32);
+  // Detect dominant axis from bounding box
+  const domAxis = sz.x>sz.y && sz.x>sz.z ? 'x' :
+                  sz.y>sz.x && sz.y>sz.z ? 'y' : 'z';
+
+  // Apply absolute rotation based on key (no sequential additions = no gimbal)
+  if(key==='hammer'){
+    // Hammer: held pointing forward, head at front
+    // Most hammer.glb exports: handle along Y, head at +Y
+    // Want: handle pointing back (+Z), head pointing forward (-Z)
+    mdl.rotation.set(-Math.PI/2, 0, 0); // rotate X: Y→-Z
+    gunGroup.position.set(0.12, -0.16, -0.30);
+    gunGroup.rotation.set(0, 0, 0);
+  } else if(key==='minecraft'||key==='ar'){
+    // Gun: barrel pointing forward (-Z). Most gun GLBs: barrel along +Z or -X
+    if(domAxis==='x'){
+      // Barrel along X → rotate 90° Y so +X → -Z
+      mdl.rotation.set(0, Math.PI/2, 0);
+    } else if(domAxis==='y'){
+      // Barrel along Y → tilt
+      mdl.rotation.set(Math.PI/2, 0, 0);
+    } else {
+      // Barrel along Z: check if +Z or -Z
+      mdl.rotation.set(0, 0, 0); // assume already correct
+    }
+    gunGroup.position.set(0.19, -0.21, -0.42);
+    gunGroup.rotation.set(0, 0.04, 0);
+  } else if(key==='desert'){
+    if(domAxis==='x'){
+      mdl.rotation.set(0, Math.PI/2, 0);
+    } else if(domAxis==='y'){
+      mdl.rotation.set(Math.PI/2, 0, 0);
+    }
+    gunGroup.position.set(0.19, -0.21, -0.32);
+    gunGroup.rotation.set(0, 0.04, 0);
   } else {
-    // Generic fallback
-    if(domAxis === 'x') mdl.rotation.y = -Math.PI/2;
-    else if(domAxis === 'y') mdl.rotation.x = Math.PI/2;
-    mdl.rotation.y += Math.PI;
-    gunGroup.position.set(.19, -.21, -.42);
+    // Generic: just try to point longest axis forward
+    if(domAxis==='x') mdl.rotation.set(0, Math.PI/2, 0);
+    else if(domAxis==='y') mdl.rotation.set(Math.PI/2, 0, 0);
+    gunGroup.position.set(0.19, -0.21, -0.42);
+    gunGroup.rotation.set(0, 0.04, 0);
   }
-  gunGroup.rotation.set(0, .04, 0);
 
   gunGroup.add(mdl);
 
@@ -3818,9 +3906,11 @@ function movePlayer(dt){
 
     if(col.stair){
       // Climbable step: check XZ overlap, raise floor
-      const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.08;
-      const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.08;
-      if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.3){
+      // Use generous radius so player reliably catches each step
+      const inXs=Math.abs(pPos.x-col.x)<col.hw+PR+0.15;
+      const inZs=Math.abs(pPos.z-col.z)<col.hd+PR+0.15;
+      // Allow stepping up to 1.5 units above current feet (generous for spiral stairs)
+      if(inXs&&inZs&&col.floorY>highestFloor&&col.floorY<=pPos.y+1.5){
         highestFloor=col.floorY;
       }
     } else if(col.isCeiling){
@@ -4192,32 +4282,45 @@ function fireOnce(){
     }
   }
 
-  // ── Hit online players (Firebase transaction, low-latency) ───────────────
+  // ── Hit online players (Firebase transaction) ────────────────────────────
   if(!hit){
     Object.entries(onlinePlayers).forEach(([uid,op])=>{
       if(!op.mesh||hit)return;
       const p=op.mesh.position;
-      const dist=_rayHitSphere(eyeX,eyeY,eyeZ,dirX/dl,dirY/dl,dirZ/dl,p.x,p.y+1.0,p.z,0.55);
+      const dist=_rayHitSphere(eyeX,eyeY,eyeZ,dirX/dl,dirY/dl,dirZ/dl,p.x,p.y+1.0,p.z,0.6);
       if(dist>0&&dist<RAY_LEN){
         hit=true;
         const dmg=Math.floor(wd.dmg*(G.isAiming?1.22:1));
         showDmgNum(dmg);
-        // Apply damage via Firebase transaction (prevents race conditions)
+        spawnImpactParticles(p.x,p.y+1.0,p.z,'flesh');
         if(MATCH_REF){
-          MATCH_REF.child('players/'+uid+'/hp').transaction(hp=>{
-            return Math.max(0,(hp||100)-dmg);
+          // Transaction: atomically reduce target HP, detect kill
+          MATCH_REF.child('matches/'+LOBBY_ID+'/players/'+uid+'/hp').transaction(hp=>{
+            const cur=typeof hp==='number'?hp:100;
+            return Math.max(0,cur-dmg);
+          },(err,committed,snapshot)=>{
+            if(!err&&committed&&snapshot){
+              const newHp=snapshot.val();
+              if(newHp<=0){
+                // Kill confirmed
+                MATCH_REF.child('matches/'+LOBBY_ID+'/events').push({
+                  type:'kill',killer:CUR_USER?.uid,killerName:UD.username||'Player',
+                  victim:uid,victimName:op.data?.name||'Player',t:Date.now()
+                });
+                G.kills++;G.scoreBlue++;updateHUD();showKillFx();
+                addKF(UD.username||'You',op.data?.name||'Player');
+                earnCoins(5);compMsg(COMPANION_MSGS.playerKill,true);giveXP(80);
+              } else {
+                // Damage confirmed, not killed
+                addKF('Hit',op.data?.name||'Player');
+              }
+            }
           });
-          // Log the shot for kill feed
-          MATCH_REF.child('shots').push({
-            from:CUR_USER?.uid||'guest',
-            to:uid,
-            dmg,
-            t:Date.now()
-          });
+        } else {
+          // Practice/offline fallback
+          G.kills++;G.scoreBlue++;updateHUD();showKillFx();
+          addKF('You',op.data?.name||'Player');
         }
-        G.kills++;G.scoreBlue++;updateHUD();showKillFx();
-        addKF('You',op.data?.name||'Player');
-        earnCoins(5);compMsg(COMPANION_MSGS.playerKill,true);giveXP(80);
       }
     });
   }
